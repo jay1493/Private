@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">MusicApp</string>
+    <string name="Search_a_song">Search a song here...</string>
+    <string name="dashboardVideoLink">ytcropper.com/cropped/RP58a97f821e1fe</string>
+    <string name="There_seems_a_problem">There seems a problem connecting with our servers. Please try again later...</string>
+    <string name="youtubeAPI">AIzaSyAd71_lS2_vKcqqcG1_dq4NRzf7OPuCHdQ</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

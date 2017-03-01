@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:oneshot="false" android:variablePadding="true">
+<item android:drawable="@color/background_drawable_1" android:duration="2000" android:interpolator ="@android:interpolator/bounce"/>
+<item android:drawable="@color/background_drawable_2" android:duration="2000" android:interpolator ="@android:interpolator/bounce"/>
+<item android:drawable="@color/background_drawable_3" android:duration="2000" android:interpolator ="@android:interpolator/bounce"/>
+<item android:drawable="@color/background_drawable_4" android:duration="2000" android:interpolator ="@android:interpolator/bounce"/>
+<item android:drawable="@color/background_drawable_5" android:duration="2000" android:interpolator ="@android:interpolator/bounce"/>
+
+</animation-list>

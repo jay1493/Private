@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/d10">
+<android.support.v7.widget.CardView
+    android:id="@+id/mainCard_Song"
+    android:layout_width ="wrap_content"
+    android:layout_height="wrap_content"
+    android:elevation="@dimen/d10">
+    <LinearLayout
+        android:layout_width="@dimen/d150"
+        android:layout_height="@dimen/d200"
+        android:weightSum="10"
+        android:orientation="vertical">
+        <RelativeLayout
+            android:id="@+id/mainCard_Image"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="7"
+            android:background="#FFFFFF"
+            android:layout_gravity="start|top">
+            <ImageView
+                android:id="@+id/albumImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:src="@drawable/music"/>
+        </RelativeLayout>
+        <View android:layout_height="0dp" android:layout_weight="0.1" android:layout_width="match_parent" android:background="@color/background_drawable_4"/>
+        <RelativeLayout
+            android:id="@+id/mainCard_Text"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="#FFFFFF"
+            android:layout_weight="2.9">
+            <TextView
+                android:id="@+id/songName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:textColor="#000000"
+                android:textStyle="italic"
+                android:ellipsize="end"/>
+            <TextView
+                android:id="@+id/albumName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/songName"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:textColor="#000000"
+                android:textStyle="italic"
+                android:ellipsize="end"/>
+        </RelativeLayout>
+    </LinearLayout>
+
+</android.support.v7.widget.CardView>
+
+</RelativeLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="button_loader_color">#514134</color>
+    <color name="background_drawable_1">#181616</color>
+    <color name="background_drawable_2">#f7181616</color>
+    <color name="background_drawable_3">#ed181616</color>
+    <color name="background_drawable_4">#e3181616</color>
+    <color name="background_drawable_5">#d5181616</color>
+</resources>

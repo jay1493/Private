@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.anubhav.musicapp.TestingActivity"
+    android:background="#000000"
+    style="@style/MainScreenTheme">
+    <ImageView
+        android:id="@+id/mainBackImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/main1c"
+        android:scaleType="fitXY"/>
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/dots1"
+        android:scaleType="fitXY"
+        android:alpha="0.2"/>
+    <TextView
+        android:id="@+id/logo_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:scaleType="centerInside"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:text="Mujiek-"
+        android:textSize="70dp"
+        android:textColor="#f2fff4f4" />
+    <ImageView
+        android:id="@+id/main_loader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:padding="10dp"
+        android:layout_marginBottom="20dp"
+        android:src="@drawable/infinity1"/>
+
+</FrameLayout>
