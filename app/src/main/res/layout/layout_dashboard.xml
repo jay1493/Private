@@ -22,19 +22,28 @@
                 android:layout_height="wrap_content"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
+                android:orientation="horizontal"
                 android:weightSum="10"
                 android:layout_gravity="bottom">
                 <EditText
                     android:id="@+id/et_searchSong"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="10"
+                    android:layout_weight="9"
                     android:maxLines="2"
+                    android:textIsSelectable="true"
                     android:textColor="#FFFFFF"
                     android:inputType="textCapWords"
                     android:textColorHint="#FFFFFF"
                     android:hint="@string/Search_a_song"
                     android:drawableRight="@drawable/youtube"/>
+                <ImageView
+                    android:id="@+id/searchSong"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:srcCompat ="@drawable/search"
+                    android:layout_gravity="center"/>
             </LinearLayout>
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar_dashboard"

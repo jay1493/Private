@@ -1,9 +1,15 @@
 package com.example.anubhav.musicapp.Fragments;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -32,17 +38,45 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
     private ProgressDialog progressDialog;
     private List<AlbumModel> albumModelList;
     private MusicAdapter musicAdapter;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1991;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        permissions(context);
+    }
+    @TargetApi(Build.VERSION_CODES.M)
+    private void permissions(Context context) {
+        if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},Manifest_permission_READ_EXTERNAL_STORAGE);
+        }else{
+           initializeLoader();
+        }
+        return;
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case Manifest_permission_READ_EXTERNAL_STORAGE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    initializeLoader();
+                } else {
+                    // User refused to grant permission.
+                    permissions(getActivity());
+                }
+                break;
+        }
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         albumModelList = new ArrayList<>();
-        getLoaderManager().initLoader(0,savedInstanceState,this);
         setRetainInstance(true);
-        progressDialog = new ProgressDialog(getActivity());
-        progressDialog.setMessage("Please Wait...");
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.show();
+
     }
 
     @Nullable
@@ -80,7 +114,13 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
         outState.putAll(bundle);*/
     }
 
-
+    public void initializeLoader(){
+        getLoaderManager().initLoader(0,null,this);
+        progressDialog = new ProgressDialog(getActivity());
+        progressDialog.setMessage("Please Wait...");
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.show();
+    }
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         switch(id){
@@ -100,7 +140,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
              progressDialog.dismiss();
          }
         if(data!=null && data.moveToFirst()){
-              int albumId = data.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ID);
+              int albumId = data.getColumnIndex(MediaStore.Audio.Albums._ID);
               int artistTitle = data.getColumnIndex(MediaStore.Audio.Albums.ARTIST);
               int albumTitle = data.getColumnIndex(MediaStore.Audio.Albums.ALBUM);
               int albumCover = data.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART);
