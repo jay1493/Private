@@ -31,6 +31,10 @@ import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -58,6 +62,7 @@ public class FragMusicSearch extends Fragment {
     private final String WEBHILLS_YOUTUBE_API_HIT_SEARCH = "https://api.w3hills.com/youtube/search";
     private final String FETCH_DOWNLOAD_LINKS = "https://api.w3hills.com/youtube/get_video_info";
     private final String YTGRABBER_FETCH_DOWNLOAD_LINKS = "https://ytgrabber.p.mashape.com/app/get/";
+    private final String KEEPVID_FETCH_DOWNLOAD_LINKS = "http://keepvid.com/?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D";
     //Todo: change api key...
     private final String SEARCH_URL_2 = "&type=video&maxResults=20&part=snippet&fields=items(id/videoId,snippet/title,snippet/thumbnails)&key="
             + Constants.Youtube_API_Key;
@@ -262,8 +267,8 @@ public class FragMusicSearch extends Fragment {
         recyclerView.setAdapter(youTubeSearchAdapter);
     }
 
-
-/*    private class GenerateDownloadLinks extends
+    private void commentedCodes(){
+        /*    private class GenerateDownloadLinks extends
             AsyncTask<String, Void, DownloadVidsModel> {
         private ProgressDialog progressDialog;
 
@@ -384,39 +389,44 @@ public class FragMusicSearch extends Fragment {
         }
 
     }*/
-    private class GenerateDownloadLinks extends
-            AsyncTask<String, Void, DownloadVidsModel> {
-        private ProgressDialog progressDialog;
+
 
         /**
-         * This async uses API YTGrabber to generate Links,
-         * HENCE: Using this API for now
+         * YTGrabber API -- Links also not work for these..
          */
+        /*private class GenerateDownloadLinks extends
+                AsyncTask<String, Void, DownloadVidsModel> {
+            private ProgressDialog progressDialog;
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressDialog = new ProgressDialog(activityContext);
-            progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
-            progressDialog.setCanceledOnTouchOutside(false);
-            progressDialog.show();
-        }
+            *//**
+             * This async uses API YTGrabber to generate Links,
+             * HENCE: Using this API for now
+             *//*
 
-        @Override
-        protected DownloadVidsModel doInBackground(String... params) {
-            String videoId = params[0];
-            String token = params[1];
-            String downloadLinks = YTGRABBER_FETCH_DOWNLOAD_LINKS + videoId;
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                progressDialog = new ProgressDialog(activityContext);
+                progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
+                progressDialog.setCanceledOnTouchOutside(false);
+                progressDialog.show();
+            }
 
-            try {
-                URL url = new URL(downloadLinks);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.setReadTimeout(10000);
-                urlConnection.setRequestProperty("Accept","application/json");
-                urlConnection.setRequestProperty("X-Mashape-Key",Constants.YTGRABBER_API_KEY);
+            @Override
+            protected DownloadVidsModel doInBackground(String... params) {
+                String videoId = params[0];
+                String token = params[1];
+                String downloadLinks = YTGRABBER_FETCH_DOWNLOAD_LINKS + videoId;
 
-                    /*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
+                try {
+                    URL url = new URL(downloadLinks);
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.setReadTimeout(10000);
+                    urlConnection.setRequestProperty("Accept","application/json");
+                    urlConnection.setRequestProperty("X-Mashape-Key",Constants.YTGRABBER_API_KEY);
+
+                    *//*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
                     urlConnection.setDoInput(true);
                     urlConnection.setDoOutput(true);
 
@@ -450,58 +460,140 @@ public class FragMusicSearch extends Fragment {
                                     .getJSONObject("medium").getString("url"));
                             listOfSearchedYouTubeVids.add(vItem);
                         }
-                    }*/
+                    }*//*
 
-                int response = urlConnection.getResponseCode();
-                if(response == HttpURLConnection.HTTP_OK){
-                    BufferedReader reader = null;
-                    reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                    String line ="";
-                    String responseService ="";
-                    while((line = reader.readLine())!=null){
-                        responseService += line;
-                    }
-                    JSONObject jsonObj = new JSONObject(responseService);
-                    downloadvidsModel = new DownloadVidsModel();
-                    List<AudioLinksModel> audioLinks = new ArrayList<>();
-                    List<VideoLinksModel> videoLinks = new ArrayList<>();
-                    if(jsonObj.getJSONObject("error").has("error_message")){
-                        String errorMsg = String.valueOf(jsonObj.getJSONObject("error").get("error_message"));
-                        errorMsg = errorMsg.substring(0,errorMsg.indexOf("\n"));
-                        downloadvidsModel.setErrorMsg(errorMsg);
-                    }else {
-                        JSONArray linksArray = jsonObj.getJSONArray("link");
-                        for (int i = 0; i < linksArray.length(); i++) {
-                            JSONObject linkObj = linksArray.getJSONObject(i);
-                            if (String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp4") ||
-                                    String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp3")) {
-                                //Audio Links
-                                AudioLinksModel audioLinksModel = new AudioLinksModel();
-                                audioLinksModel.setUrl(String.valueOf(linkObj.get("url")));
-                                audioLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
-                                audioLinks.add(audioLinksModel);
-                            } else {
-                                //Video Links
-                                VideoLinksModel videoLinksModel = new VideoLinksModel();
-                                videoLinksModel.setUrl(String.valueOf(linkObj.get("url")));
-                                videoLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
-                                videoLinks.add(videoLinksModel);
-                            }
+                    int response = urlConnection.getResponseCode();
+                    if(response == HttpURLConnection.HTTP_OK){
+                        BufferedReader reader = null;
+                        reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                        String line ="";
+                        String responseService ="";
+                        while((line = reader.readLine())!=null){
+                            responseService += line;
                         }
-                        downloadvidsModel.setErrorMsg("");
-                        downloadvidsModel.setAudioLinks(audioLinks);
-                        downloadvidsModel.setVideoLinks(videoLinks);
+                        JSONObject jsonObj = new JSONObject(responseService);
+                        downloadvidsModel = new DownloadVidsModel();
+                        List<AudioLinksModel> audioLinks = new ArrayList<>();
+                        List<VideoLinksModel> videoLinks = new ArrayList<>();
+                        if(jsonObj.has("error") && !jsonObj.isNull("error") && jsonObj.getJSONObject("error")!=null && jsonObj.getJSONObject("error").has("error_message")){
+                            String errorMsg = String.valueOf(jsonObj.getJSONObject("error").get("error_message"));
+                            errorMsg = errorMsg.substring(0,errorMsg.indexOf("\n"));
+                            downloadvidsModel.setErrorMsg(errorMsg);
+                        }else {
+                            JSONArray linksArray = jsonObj.getJSONArray("link");
+                            for (int i = 0; i < linksArray.length(); i++) {
+                                JSONObject linkObj = linksArray.getJSONObject(i);
+                                if (String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp4") ||
+                                        String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp3")) {
+                                    //Audio Links
+                                    AudioLinksModel audioLinksModel = new AudioLinksModel();
+                                    audioLinksModel.setUrl(String.valueOf(linkObj.get("url")));
+                                    audioLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
+                                    audioLinks.add(audioLinksModel);
+                                } else {
+                                    //Video Links
+                                    VideoLinksModel videoLinksModel = new VideoLinksModel();
+                                    videoLinksModel.setUrl(String.valueOf(linkObj.get("url")));
+                                    videoLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
+                                    videoLinks.add(videoLinksModel);
+                                }
+                            }
+                            downloadvidsModel.setErrorMsg("");
+                            downloadvidsModel.setAudioLinks(audioLinks);
+                            downloadvidsModel.setVideoLinks(videoLinks);
+                        }
                     }
+
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
 
 
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
+                return downloadvidsModel;
+            }
+
+            @Override
+            protected void onPostExecute(DownloadVidsModel result) {
+                super.onPostExecute(result);
+                // Cancel the Loading Dialog
+                progressDialog.dismiss();
+                *//** Show links overlay here *//*
+                //Todo: Just testing download links
+                if(result.getErrorMsg().equalsIgnoreCase("")) {
+                    new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(), result.getAudioLinks().get(0).getExtension(),result.getTitle());
+                }else{
+                    Toast.makeText(activityContext, result.getErrorMsg(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+        }*/
+    }
+
+
+    private class GenerateDownloadLinks extends
+            AsyncTask<String, Void, DownloadVidsModel> {
+        private ProgressDialog progressDialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(activityContext);
+            progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected DownloadVidsModel doInBackground(String... params) {
+            String videoId = params[0];
+            String token = params[1];
+            String downloadLinks = KEEPVID_FETCH_DOWNLOAD_LINKS + videoId;
+            Document keepVidHome = null;
+            downloadvidsModel = new DownloadVidsModel();
+            List<VideoLinksModel> videoLinks = new ArrayList<>();
+            List<AudioLinksModel> audioLinks = new ArrayList<>();
+            try {
+                keepVidHome = Jsoup.connect(downloadLinks).get();
+                Element body = keepVidHome.select("body").get(0);
+                Elements divLinkBody = body.getElementsByClass("d-info2");
+                Elements dlElements = divLinkBody.select("dl");
+                for(Element dtElement : dlElements){
+                    Elements ddElements = dtElement.select("dd");
+                    for(Element ddElement : ddElements){
+                        Element link = ddElement.select("a[href]").get(0);
+                        Element spanWid = ddElement.select("a[href]").get(0).getElementsByClass("spanWid").get(0);
+                        if(spanWid.text().contains("MP3")||spanWid.text().contains("mp3")||spanWid.text().contains("M4A")||spanWid.text().contains("m4a")){
+                            //Audio Links
+                            AudioLinksModel audioLinksModel = new AudioLinksModel();
+                            audioLinksModel.setUrl(link.attr("abs:href"));
+                            String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
+                            String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
+                            audioLinksModel.setQuality(quality);
+                            audioLinksModel.setExtension(extension);
+                            audioLinks.add(audioLinksModel);
+                        }else{
+                            //Video Links
+                            VideoLinksModel videoLinksModel = new VideoLinksModel();
+                            videoLinksModel.setUrl(link.attr("abs:href"));
+                            String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
+                            String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
+                            videoLinksModel.setQuality(quality);
+                            videoLinksModel.setExtension(extension);
+                            videoLinks.add(videoLinksModel);
+                        }
+                    }
+                }
+                downloadvidsModel.setAudioLinks(audioLinks);
+                downloadvidsModel.setVideoLinks(videoLinks);
             } catch (IOException e) {
                 e.printStackTrace();
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+
 
 
             return downloadvidsModel;
@@ -514,11 +606,8 @@ public class FragMusicSearch extends Fragment {
             progressDialog.dismiss();
             /** Show links overlay here */
             //Todo: Just testing download links
-            if(result.getErrorMsg().equalsIgnoreCase("")) {
-                new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(), result.getAudioLinks().get(0).getExtension(),result.getTitle());
-            }else{
-                Toast.makeText(activityContext, result.getErrorMsg(), Toast.LENGTH_SHORT).show();
-            }
+            new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(), result.getAudioLinks().get(0).getExtension(),result.getTitle());
+
         }
 
     }
@@ -543,10 +632,13 @@ public class FragMusicSearch extends Fragment {
             String videoExtension = params[1];
             String videoTitle = params[2];
             try {
+                String userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0.1)";
                 URL url = new URL(video);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
+                urlConnection.setRequestProperty("User-Agent",userAgent);
                 urlConnection.setReadTimeout(10000);
+                urlConnection.connect();
                 int response = urlConnection.getResponseCode();
                 if(response == HttpURLConnection.HTTP_OK){
                     int fileLength = urlConnection.getContentLength();
@@ -555,7 +647,8 @@ public class FragMusicSearch extends Fragment {
                     if(!fileDir.exists()){
                         fileDir.mkdirs();
                     }
-                    File songFile = new File(fileDir,videoTitle+"."+videoExtension);
+                    //Todo: Do something about naming files..
+                    File songFile = new File(fileDir,"videoPlayback"+"."+videoExtension);
                     if(songFile.exists()){
                         songFile.delete();
                     }
