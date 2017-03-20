@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
@@ -32,8 +33,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -50,8 +55,9 @@ public class FragMusicSearch extends Fragment {
     private Context activityContext;
     private static final String songFetchKey = "SongKey";
     private final String SEARCH_URL_1 = "https://www.googleapis.com/youtube/v3/search?order=viewCount&q=";
-    private final String HIT_SEARCH = "https://api.w3hills.com/youtube/search";
+    private final String WEBHILLS_YOUTUBE_API_HIT_SEARCH = "https://api.w3hills.com/youtube/search";
     private final String FETCH_DOWNLOAD_LINKS = "https://api.w3hills.com/youtube/get_video_info";
+    private final String YTGRABBER_FETCH_DOWNLOAD_LINKS = "https://ytgrabber.p.mashape.com/app/get/";
     //Todo: change api key...
     private final String SEARCH_URL_2 = "&type=video&maxResults=20&part=snippet&fields=items(id/videoId,snippet/title,snippet/thumbnails)&key="
             + Constants.Youtube_API_Key;
@@ -116,7 +122,7 @@ public class FragMusicSearch extends Fragment {
                 Matcher matcher = pattern.matcher(key);
                 String decodedSearchStr = matcher.replaceAll("%20");
 //                String searchUrl = SEARCH_URL_1 + decodedSearchStr + SEARCH_URL_2;
-                String searchUrl = HIT_SEARCH + "?keyword="+decodedSearchStr+"&api_key="+Constants.API_KEY;
+                String searchUrl = WEBHILLS_YOUTUBE_API_HIT_SEARCH + "?keyword="+decodedSearchStr+"&api_key="+Constants.WEBHILLS_Youtube_API_KEY;
                 new GetVideoListFromYouTube().execute(searchUrl);
             }else{
                 return;
@@ -250,14 +256,21 @@ public class FragMusicSearch extends Fragment {
        youTubeSearchAdapter = new YoutubeSearchAdapter(activityContext, result, new ItemClickListener() {
            @Override
            public void itemClick(View view, int position) {
-              new DownloadTask().execute(listOfSearchedYouTubeVids.get(position).getVideoId(),listOfSearchedYouTubeVids.get(position).getToken());
+              new GenerateDownloadLinks().execute(listOfSearchedYouTubeVids.get(position).getVideoId(),listOfSearchedYouTubeVids.get(position).getToken());
            }
        });
         recyclerView.setAdapter(youTubeSearchAdapter);
     }
-    private class DownloadTask extends
+
+
+/*    private class GenerateDownloadLinks extends
             AsyncTask<String, Void, DownloadVidsModel> {
         private ProgressDialog progressDialog;
+
+        *//**
+         * This async uses API WebHills(YouTube API) to generate Links, but the links are empty when we open them
+         * HENCE: Not using this API for now
+         *//*
 
         @Override
         protected void onPreExecute() {
@@ -272,14 +285,14 @@ public class FragMusicSearch extends Fragment {
         protected DownloadVidsModel doInBackground(String... params) {
             String videoId = params[0];
             String token = params[1];
-            String downloadLinks = FETCH_DOWNLOAD_LINKS + "?"+"video_id="+videoId+"&"+"token="+token+"&"+"api_key="+Constants.API_KEY;
+            String downloadLinks = FETCH_DOWNLOAD_LINKS + "?"+"video_id="+videoId+"&"+"token="+token+"&"+"api_key="+Constants.WEBHILLS_Youtube_API_KEY;
 
                 try {
                     URL url = new URL(downloadLinks);
                     HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setRequestMethod("GET");
                     urlConnection.setReadTimeout(10000);
-                    /*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
+                    *//*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
                     urlConnection.setDoInput(true);
                     urlConnection.setDoOutput(true);
 
@@ -313,7 +326,7 @@ public class FragMusicSearch extends Fragment {
                                     .getJSONObject("medium").getString("url"));
                             listOfSearchedYouTubeVids.add(vItem);
                         }
-                    }*/
+                    }*//*
 
                     int response = urlConnection.getResponseCode();
                     if(response == HttpURLConnection.HTTP_OK){
@@ -362,6 +375,222 @@ public class FragMusicSearch extends Fragment {
 
         @Override
         protected void onPostExecute(DownloadVidsModel result) {
+            super.onPostExecute(result);
+            // Cancel the Loading Dialog
+            progressDialog.dismiss();
+            *//** Show links overlay here *//*
+            //Todo: Just testing download links
+            new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(),result.getAudioLinks().get(0).getExtension());
+        }
+
+    }*/
+    private class GenerateDownloadLinks extends
+            AsyncTask<String, Void, DownloadVidsModel> {
+        private ProgressDialog progressDialog;
+
+        /**
+         * This async uses API YTGrabber to generate Links,
+         * HENCE: Using this API for now
+         */
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(activityContext);
+            progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected DownloadVidsModel doInBackground(String... params) {
+            String videoId = params[0];
+            String token = params[1];
+            String downloadLinks = YTGRABBER_FETCH_DOWNLOAD_LINKS + videoId;
+
+            try {
+                URL url = new URL(downloadLinks);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setRequestProperty("Accept","application/json");
+                urlConnection.setRequestProperty("X-Mashape-Key",Constants.YTGRABBER_API_KEY);
+
+                    /*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+
+                    int response = urlConnection.getResponseCode();
+                    if(response == HttpURLConnection.HTTP_OK){
+                        BufferedReader reader = null;
+                       if(urlConnection.getContentEncoding().equalsIgnoreCase("gzip")){
+                           reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(urlConnection.getInputStream())));
+                       }else{
+                           reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                       }
+                        String line ="";
+                        String responseService ="";
+                        while((line = reader.readLine())!=null){
+                            responseService += line;
+                        }
+                        JSONObject jsonObj = new JSONObject(responseService);
+                        JSONArray itemsArr = jsonObj.getJSONArray("items");
+                        for (int i = 0; i < itemsArr.length(); i++) {
+                            YouTubeSearchedVideos vItem = new YouTubeSearchedVideos();
+
+                            JSONObject item = itemsArr.getJSONObject(i);
+
+                            JSONObject id = item.getJSONObject("id");
+                            vItem.setVideoId(id.getString("videoId"));
+
+                            JSONObject snippet = item.getJSONObject("snippet");
+                            vItem.setTitle(snippet.getString("title"));
+
+                            vItem.setIconUrl(snippet.getJSONObject("thumbnails")
+                                    .getJSONObject("medium").getString("url"));
+                            listOfSearchedYouTubeVids.add(vItem);
+                        }
+                    }*/
+
+                int response = urlConnection.getResponseCode();
+                if(response == HttpURLConnection.HTTP_OK){
+                    BufferedReader reader = null;
+                    reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    String line ="";
+                    String responseService ="";
+                    while((line = reader.readLine())!=null){
+                        responseService += line;
+                    }
+                    JSONObject jsonObj = new JSONObject(responseService);
+                    downloadvidsModel = new DownloadVidsModel();
+                    List<AudioLinksModel> audioLinks = new ArrayList<>();
+                    List<VideoLinksModel> videoLinks = new ArrayList<>();
+                    if(jsonObj.getJSONObject("error").has("error_message")){
+                        String errorMsg = String.valueOf(jsonObj.getJSONObject("error").get("error_message"));
+                        errorMsg = errorMsg.substring(0,errorMsg.indexOf("\n"));
+                        downloadvidsModel.setErrorMsg(errorMsg);
+                    }else {
+                        JSONArray linksArray = jsonObj.getJSONArray("link");
+                        for (int i = 0; i < linksArray.length(); i++) {
+                            JSONObject linkObj = linksArray.getJSONObject(i);
+                            if (String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp4") ||
+                                    String.valueOf(linkObj.getJSONObject("type").get("format")).equalsIgnoreCase("mp3")) {
+                                //Audio Links
+                                AudioLinksModel audioLinksModel = new AudioLinksModel();
+                                audioLinksModel.setUrl(String.valueOf(linkObj.get("url")));
+                                audioLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
+                                audioLinks.add(audioLinksModel);
+                            } else {
+                                //Video Links
+                                VideoLinksModel videoLinksModel = new VideoLinksModel();
+                                videoLinksModel.setUrl(String.valueOf(linkObj.get("url")));
+                                videoLinksModel.setExtension(String.valueOf(linkObj.getJSONObject("type").get("format")));
+                                videoLinks.add(videoLinksModel);
+                            }
+                        }
+                        downloadvidsModel.setErrorMsg("");
+                        downloadvidsModel.setAudioLinks(audioLinks);
+                        downloadvidsModel.setVideoLinks(videoLinks);
+                    }
+                }
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+
+            return downloadvidsModel;
+        }
+
+        @Override
+        protected void onPostExecute(DownloadVidsModel result) {
+            super.onPostExecute(result);
+            // Cancel the Loading Dialog
+            progressDialog.dismiss();
+            /** Show links overlay here */
+            //Todo: Just testing download links
+            if(result.getErrorMsg().equalsIgnoreCase("")) {
+                new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(), result.getAudioLinks().get(0).getExtension(),result.getTitle());
+            }else{
+                Toast.makeText(activityContext, result.getErrorMsg(), Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
+
+
+    private class DownloadLink extends
+            AsyncTask<String, Integer, String> {
+        private ProgressDialog progressDialog;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(activityContext);
+            progressDialog.setMessage(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you));
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String video = params[0];
+            String videoExtension = params[1];
+            String videoTitle = params[2];
+            try {
+                URL url = new URL(video);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setReadTimeout(10000);
+                int response = urlConnection.getResponseCode();
+                if(response == HttpURLConnection.HTTP_OK){
+                    int fileLength = urlConnection.getContentLength();
+                    InputStream inputStream = urlConnection.getInputStream();
+                    File fileDir = new File("/sdcard/MyMusicApp");
+                    if(!fileDir.exists()){
+                        fileDir.mkdirs();
+                    }
+                    File songFile = new File(fileDir,videoTitle+"."+videoExtension);
+                    if(songFile.exists()){
+                        songFile.delete();
+                    }
+                    songFile.createNewFile();
+                    OutputStream outputStream = new FileOutputStream(songFile);
+                    byte[] bytes = new byte[4096];
+                    int count;
+                    long total =0;
+                    while((count = inputStream.read(bytes))!=-1){
+                        if (isCancelled()) {
+                            inputStream.close();
+                            return null;
+                        }
+                        total += count;
+                        // publishing the progress....
+                        if (fileLength > 0) // only if total length is known
+                            publishProgress((int) (total * 100 / fileLength));
+                        outputStream.write(bytes, 0, count);
+                    }
+
+                }
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            return "Success";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
             super.onPostExecute(result);
             // Cancel the Loading Dialog
             progressDialog.dismiss();

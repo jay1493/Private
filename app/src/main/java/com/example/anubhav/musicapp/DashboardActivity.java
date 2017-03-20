@@ -236,7 +236,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
 
     private void searchSong() {
-
+//Todo: Remove the below file, and fix the keyboard issue:
         etSearchSong.setText("closer");
             /** Inflate an overlapping view, to show searching is resumed*/
            if(!etSearchSong.getText().toString().trim().equalsIgnoreCase("")) {
