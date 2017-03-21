@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
+    android:id="@+id/mainDashboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:weightSum="10">
@@ -29,7 +30,7 @@
                     android:id="@+id/et_searchSong"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="9"
+                    android:layout_weight="8"
                     android:maxLines="2"
                     android:textIsSelectable="true"
                     android:textColor="#FFFFFF"
@@ -44,6 +45,14 @@
                     android:layout_weight="1"
                     app:srcCompat ="@drawable/search"
                     android:layout_gravity="center"/>
+                <ImageView
+                    android:id="@+id/listenSong"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:srcCompat ="@drawable/listen_song"
+                    android:layout_gravity="center"
+                    android:visibility="gone"/>
             </LinearLayout>
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar_dashboard"

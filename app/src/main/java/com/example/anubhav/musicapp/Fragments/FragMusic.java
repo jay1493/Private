@@ -48,7 +48,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
     @TargetApi(Build.VERSION_CODES.M)
     private void permissions(Context context) {
         if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},Manifest_permission_READ_EXTERNAL_STORAGE);
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO},Manifest_permission_READ_EXTERNAL_STORAGE);
         }else{
            initializeLoader();
         }
@@ -61,7 +61,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
             case Manifest_permission_READ_EXTERNAL_STORAGE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
                     initializeLoader();
                 } else {
                     // User refused to grant permission.

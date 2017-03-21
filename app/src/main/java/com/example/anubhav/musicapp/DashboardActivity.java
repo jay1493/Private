@@ -2,13 +2,17 @@ package com.example.anubhav.musicapp;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.LoaderManager;
+import android.content.Context;
 import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -16,6 +20,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -42,12 +47,41 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Fragments.FragMusic;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
+import com.example.anubhav.musicapp.GNSDKComp.*;
 import com.google.android.youtube.player.YouTubeBaseActivity;
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerView;
+import com.gracenote.gnsdk.GnAssetFetch;
+import com.gracenote.gnsdk.GnDescriptor;
+import com.gracenote.gnsdk.GnError;
+import com.gracenote.gnsdk.GnException;
+import com.gracenote.gnsdk.GnLanguage;
+import com.gracenote.gnsdk.GnLicenseInputMode;
+import com.gracenote.gnsdk.GnList;
+import com.gracenote.gnsdk.GnLocale;
+import com.gracenote.gnsdk.GnLocaleGroup;
+import com.gracenote.gnsdk.GnLookupData;
+import com.gracenote.gnsdk.GnLookupLocalStream;
+import com.gracenote.gnsdk.GnManager;
+import com.gracenote.gnsdk.GnMic;
+import com.gracenote.gnsdk.GnMusicIdStream;
+import com.gracenote.gnsdk.GnMusicIdStreamIdentifyingStatus;
+import com.gracenote.gnsdk.GnMusicIdStreamPreset;
+import com.gracenote.gnsdk.GnMusicIdStreamProcessingStatus;
+import com.gracenote.gnsdk.GnRegion;
+import com.gracenote.gnsdk.GnResponseAlbums;
+import com.gracenote.gnsdk.GnStatus;
+import com.gracenote.gnsdk.GnStorageSqlite;
+import com.gracenote.gnsdk.GnUser;
+import com.gracenote.gnsdk.GnUserStore;
+import com.gracenote.gnsdk.IGnCancellable;
+import com.gracenote.gnsdk.IGnMusicIdStreamEvents;
+import com.gracenote.gnsdk.IGnSystemEvents;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
 
 /**
  * Created by anubhav on 19/2/17.
@@ -69,9 +103,33 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private FragMusic fragMusic;
     private FragmentManager fragmentManager;
     private AnimationDrawable animationDrawable;
-    private ImageView searchSong;
+    private ImageView searchSong,listenSong;
+    private Context context;
+    private LinearLayout mainDashboardLayout;
 //    private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1991;
 
+    /**
+     *
+     * GNSDK Params...
+     */
+    static final String 				gnsdkClientId 			= Constants.GNSDK_CLIENT_ID;
+    static final String 				gnsdkClientTag 			= Constants.GNSDK_CLIENT_TAG;
+    static final String 				gnsdkLicenseFilename 	= "licence.txt";
+    private static final String    		gnsdkLogFilename 		= "sample.log";
+    private static final String 		appString				= Constants.APP_NAME;
+    private String gnsdkLicence ="";
+    private GnManager gnManager;
+    private GnUser gnUser;
+    private AudioVisualizeAdapter gnMicrophone;
+    private GnMusicIdStream gnMusicIdStream;
+    private AudioVisualDisplay audioVisualDisplay;
+
+    protected volatile boolean 			lastLookup_local		 = false;	// indicates whether the match came from local storage
+    protected volatile long				lastLookup_matchTime 	 = 0;  		// total lookup time for query
+    protected volatile long				lastLookup_startTime;  				// start time of query
+    private volatile boolean			audioProcessingStarted   = false;
+    private volatile boolean			analyzingCollection 	 = false;
+    private volatile boolean			analyzeCancelled 	 	 = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,7 +137,9 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         setContentView(R.layout.layout_dashboard);
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
         fragMusic = new FragMusic();
+        context = this;
         init();
+        settingUpGnSDK();
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -102,12 +162,64 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         etSearchSong.setOnClickListener(this);
         searchSong.setOnClickListener(this);
         etSearchSong.setOnEditorActionListener(this);
+        listenSong.setOnClickListener(this);
 
+    }
+
+    private void settingUpGnSDK() {
+        audioVisualDisplay = new AudioVisualDisplay((Activity)context,mainLayout,0,mainDashboardLayout);
+        gnsdkLicence = loadAssetAsString(gnsdkLicenseFilename);
+        try {
+            gnManager = new GnManager( context, gnsdkLicence, GnLicenseInputMode.kLicenseInputModeString );
+            gnManager.systemEventHandler( new SystemEvents());
+            gnUser = new GnUser( new GnUserStore(context), gnsdkClientId, gnsdkClientTag, appString );
+            GnStorageSqlite.enable();
+            GnLookupLocalStream.enable();
+            Thread localeThread = new Thread(
+                    new LocaleLoadRunnable(GnLocaleGroup.kLocaleGroupMusic,
+                            GnLanguage.kLanguageEnglish,
+                            GnRegion.kRegionGlobal,
+                            GnDescriptor.kDescriptorDefault,
+                            gnUser)
+            );
+            localeThread.start();
+            Thread ingestThread = new Thread( new LocalBundleIngestRunnable(context) );
+            ingestThread.start();
+            gnMicrophone = new AudioVisualizeAdapter( new GnMic(),audioVisualDisplay);
+            gnMusicIdStream = new GnMusicIdStream( gnUser, GnMusicIdStreamPreset.kPresetMicrophone, new MusicIDStreamEvents() );
+            gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataContent, true);
+            gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataSonicData, true);
+            gnMusicIdStream.options().resultSingle( true );
+
+
+        } catch (GnException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String loadAssetAsString(String gnsdkLicenseFilename) {
+        InputStream inputStream = null;
+        String assetString ="";
+        try {
+            inputStream  =  this.getAssets().open(gnsdkLicenseFilename);
+            if(inputStream!=null){
+                java.util.Scanner s = new java.util.Scanner(inputStream).useDelimiter("\\A");
+
+                assetString = s.hasNext() ? s.next() : "";
+                inputStream.close();
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return assetString;
     }
 
 
     private void init() {
+        mainDashboardLayout = (LinearLayout)findViewById(R.id.mainDashboard);
         searchSong = (ImageView)findViewById(R.id.searchSong);
+        listenSong = (ImageView) findViewById(R.id.listenSong);
         toolbar = (Toolbar)findViewById(R.id.toolbar_dashboard);
         videoView = (SurfaceView) findViewById(R.id.video);
         videoLoader = (ImageView)findViewById(R.id.videoLoader);
@@ -161,6 +273,25 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     @Override
     public void onClick(View view) {
         switch (view.getId()){
+            case R.id.listenSong:
+                try {
+                    audioVisualDisplay.setDisplay(true,false);
+
+                    gnMusicIdStream.identifyAlbumAsync();
+                    if ( gnMusicIdStream != null ) {
+
+                        // Create a thread to process the data pulled from GnMic
+                        // Internally pulling data is a blocking call, repeatedly called until
+                        // audio processing is stopped. This cannot be called on the main thread.
+                        Thread audioProcessThread = new Thread(new AudioProcessRunnable());
+                        audioProcessThread.start();
+
+                    }
+                } catch (GnException e) {
+                    e.printStackTrace();
+                }
+                lastLookup_startTime = SystemClock.elapsedRealtime();
+                break;
             case R.id.searchSong:
                  searchSong();
                 break;
@@ -193,6 +324,23 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         if(animationDrawable.isRunning()){
             animationDrawable.stop();
         }
+
+        if ( gnMusicIdStream != null ) {
+
+            try {
+
+                // to ensure no pending identifications deliver results while your app is
+                // paused it is good practice to call cancel
+                // it is safe to call identifyCancel if no identify is pending
+                gnMusicIdStream.identifyCancel();
+
+                // stopping audio processing stops the audio processing thread started
+                // in onResume
+                gnMusicIdStream.audioProcessStop();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -200,6 +348,31 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         super.onResume();
         if(!animationDrawable.isRunning()){
             animationDrawable.start();
+        }
+        if ( gnMusicIdStream != null ) {
+
+            // Create a thread to process the data pulled from GnMic
+            // Internally pulling data is a blocking call, repeatedly called until
+            // audio processing is stopped. This cannot be called on the main thread.
+            Thread audioProcessThread = new Thread(new AudioProcessRunnable());
+            audioProcessThread.start();
+
+        }
+    }
+    class AudioProcessRunnable implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+
+                // start audio processing with GnMic, GnMusicIdStream pulls data from GnMic internally
+                gnMusicIdStream.audioProcessStart( gnMicrophone );
+
+            } catch (GnException e) {
+
+                Log.e( appString, e.errorCode() + ", " + e.errorDescription() + ", " + e.errorModule() );
+
+            }
         }
     }
 
@@ -292,6 +465,94 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 break;
         }
     }*/
+   private class SystemEvents implements IGnSystemEvents{
+
+        @Override
+        public void localeUpdateNeeded(GnLocale gnLocale) {
+            Thread localeUpdateThread = new Thread(new LocaleUpdateRunnable(gnLocale,gnUser));
+            localeUpdateThread.start();
+        }
+
+        @Override
+        public void listUpdateNeeded(GnList gnList) {
+            Thread listUpdateThread = new Thread(new ListUpdateRunnable(gnList,gnUser));
+            listUpdateThread.start();
+        }
+
+        @Override
+        public void systemMemoryWarning(long l, long l1) {
+
+        }
+    }
+    private class MusicIDStreamEvents implements IGnMusicIdStreamEvents {
+
+        HashMap<String, String> gnStatus_to_displayStatus;
+
+        public MusicIDStreamEvents(){
+            gnStatus_to_displayStatus = new HashMap<String,String>();
+            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingStarted.toString(), "Identification started");
+            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingFpGenerated.toString(), "Fingerprinting complete");
+            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingLocalQueryStarted.toString(), "Lookup started");
+            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingOnlineQueryStarted.toString(), "Lookup started");
+//			gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingEnded.toString(), "Identification complete");
+        }
+
+        @Override
+        public void statusEvent(GnStatus status, long percentComplete, long bytesTotalSent, long bytesTotalReceived, IGnCancellable cancellable ) {
+
+        }
+
+        @Override
+        public void musicIdStreamProcessingStatusEvent(GnMusicIdStreamProcessingStatus status, IGnCancellable canceller ) {
+
+            if(GnMusicIdStreamProcessingStatus.kStatusProcessingAudioStarted.compareTo(status) == 0)
+            {
+                audioProcessingStarted = true;
+                ((Activity)context).runOnUiThread(new Runnable (){
+                    public void run(){
+                        listenSong.setVisibility(View.VISIBLE);
+                    }
+                });
+
+            }
+
+        }
+
+        @Override
+        public void musicIdStreamIdentifyingStatusEvent( GnMusicIdStreamIdentifyingStatus status, IGnCancellable canceller ) {
+            if(gnStatus_to_displayStatus.containsKey(status.toString())){
+                //Give status of Latest Music-Id Stream Lookup...
+            }
+
+            if(status.compareTo( GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingLocalQueryStarted ) == 0 ){
+                lastLookup_local = true;
+            }
+            else if(status.compareTo( GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingOnlineQueryStarted ) == 0){
+                lastLookup_local = false;
+            }
+
+            if ( status == GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingEnded )
+            {
+//                setUIState( UIState.READY );
+            }
+        }
+
+
+        @Override
+        public void musicIdStreamAlbumResult(GnResponseAlbums result, IGnCancellable canceller ) {
+            lastLookup_matchTime = SystemClock.elapsedRealtime() - lastLookup_startTime;
+            ((Activity)context).runOnUiThread(new UpdateResultsRunnable(result,mainLayout,context,gnUser));
+        }
+
+        @Override
+        public void musicIdStreamIdentifyCompletedWithError(GnError error) {
+            if ( error.isCancelled() )
+                Toast.makeText(context, "Cancelled Lookup For Music-Id Stream...", Toast.LENGTH_SHORT).show();
+            else
+                Toast.makeText(context, "Oops! Got an error while looking for Music Stream: "+error.errorDescription(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
 
 }
