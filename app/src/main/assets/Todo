@@ -1,0 +1,6 @@
+//Todo: Tasks
+
+2.) Looking into the Content Observer in FRAGMUSIC to see if the downloaded music gets fetched here or not.
+3.) Modifying Layouts:
+     a.) In FragMusic Make child fragments inside View Flipper for Segregation of Categories:
+           ex: Albums, Songs etc.

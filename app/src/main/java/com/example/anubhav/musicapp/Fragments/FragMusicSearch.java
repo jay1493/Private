@@ -1,25 +1,37 @@
 package com.example.anubhav.musicapp.Fragments;
 
+import android.annotation.TargetApi;
 import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
+import android.transition.Fade;
+import android.transition.Transition;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.LinearInterpolator;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+import com.example.anubhav.musicapp.Adapters.LinkClickAdapter;
 import com.example.anubhav.musicapp.Adapters.YoutubeSearchAdapter;
 import com.example.anubhav.musicapp.Constants;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
@@ -60,13 +72,13 @@ import java.util.regex.Pattern;
 public class FragMusicSearch extends Fragment {
     private Context activityContext;
     private static final String songFetchKey = "SongKey";
-    private final String SEARCH_URL_1 = "https://www.googleapis.com/youtube/v3/search?order=viewCount&q=";
-    private final String WEBHILLS_YOUTUBE_API_HIT_SEARCH = "https://api.w3hills.com/youtube/search";
-    private final String FETCH_DOWNLOAD_LINKS = "https://api.w3hills.com/youtube/get_video_info";
-    private final String YTGRABBER_FETCH_DOWNLOAD_LINKS = "https://ytgrabber.p.mashape.com/app/get/";
-    private final String KEEPVID_FETCH_DOWNLOAD_LINKS = "http://keepvid.com/?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D";
-    //Todo: change api key...
-    private final String SEARCH_URL_2 = "&type=video&maxResults=20&part=snippet&fields=items(id/videoId,snippet/title,snippet/thumbnails)&key="
+    private final String SEARCH_URL_1 = Constants.FETCH_RESULTS_VIA_READING_HTML_OF_YOUTUBE_RESULTS_URL_1;
+    private final String WEBHILLS_YOUTUBE_API_HIT_SEARCH = Constants.SEARCH_FOR_MUSIC_WEBHILLS_API;
+    private final String FETCH_DOWNLOAD_LINKS = Constants.NOT_USED_WEBHILLS_API_DOWNLOAD_LINKS;
+    private final String YTGRABBER_FETCH_DOWNLOAD_LINKS = Constants.NOT_USED_YTGRABBER_DOWNLOAD_LINKS;
+    private final String KEEPVID_FETCH_DOWNLOAD_LINKS = Constants.KEEPVID_LINK;
+    //Todo: change api key...if to use
+    private final String SEARCH_URL_2 =Constants.FETCH_RESULTS_VIA_READING_HTML_OF_YOUTUBE_RESULTS_URL_2
             + Constants.Youtube_API_Key;
     private static FragMusicSearch fragmentContext;
     private static String song = null;
@@ -80,6 +92,11 @@ public class FragMusicSearch extends Fragment {
     private NotificationCompat.Builder notifBuilder;
     private String decodedSearchStr ="";
     private int notifId = 0;
+    private ArrayList<VideoLinksModel> videoLinks;
+    private ArrayList<AudioLinksModel> audioLinks;
+    private View fetchedClickedView;
+    private int fetchedClickedPos;
+    private PopupWindow popUpWindow;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
@@ -265,9 +282,17 @@ public class FragMusicSearch extends Fragment {
     }
 
     private void setAdapter(ArrayList<YouTubeSearchedVideos> result) {
-       youTubeSearchAdapter = new YoutubeSearchAdapter(activityContext, result, new ItemClickListener() {
+        downloadvidsModel = new DownloadVidsModel();
+        videoLinks = new ArrayList<>();
+        audioLinks = new ArrayList<>();
+        downloadvidsModel.setVideoLinks(videoLinks);
+        downloadvidsModel.setAudioLinks(audioLinks);
+       youTubeSearchAdapter = new YoutubeSearchAdapter(activityContext, result,downloadvidsModel, new ItemClickListener() {
            @Override
            public void itemClick(View view, int position) {
+               fetchedClickedView = view;
+               fetchedClickedView.findViewById(R.id.mainGridLayout).setVisibility(View.VISIBLE);
+               fetchedClickedPos = position;
               new GenerateDownloadLinks().execute(listOfSearchedYouTubeVids.get(position).getVideoId(),listOfSearchedYouTubeVids.get(position).getToken());
            }
        });
@@ -561,9 +586,7 @@ public class FragMusicSearch extends Fragment {
             String token = params[1];
             String downloadLinks = KEEPVID_FETCH_DOWNLOAD_LINKS + videoId;
             Document keepVidHome = null;
-            downloadvidsModel = new DownloadVidsModel();
-            List<VideoLinksModel> videoLinks = new ArrayList<>();
-            List<AudioLinksModel> audioLinks = new ArrayList<>();
+
             try {
                 keepVidHome = Jsoup.connect(downloadLinks).get();
                 Element body = keepVidHome.select("body").get(0);
@@ -610,13 +633,67 @@ public class FragMusicSearch extends Fragment {
         protected void onPostExecute(DownloadVidsModel result) {
             super.onPostExecute(result);
             // Cancel the Loading Dialog
+            initiatePopupWindow(result);
             progressDialog.dismiss();
-            /** Show links overlay here */
-            //Todo: Just testing download links
-            new DownloadLink().execute(result.getAudioLinks().get(0).getUrl(), result.getAudioLinks().get(0).getExtension(),result.getTitle());
-
         }
 
+    }
+
+    private void initiatePopupWindow(DownloadVidsModel result) {
+        View view = LayoutInflater.from(activityContext).inflate(R.layout.row_grid_generate_links, null,false);
+        RecyclerView audioRecycler = (RecyclerView) view.findViewById(R.id.audioLinks);
+        RecyclerView videoRecycler = (RecyclerView) view.findViewById(R.id.videoLinks);
+        audioRecycler.setLayoutManager(new GridLayoutManager(activityContext,3));
+        videoRecycler.setLayoutManager(new GridLayoutManager(activityContext,3));
+        LinkClickAdapter audioLinkAdap = new LinkClickAdapter(activityContext, 0, result, new LinkClickAdapter.LinkClickInterface() {
+            @Override
+            public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
+                if(audioLists!=null) {
+                    new DownloadLink().execute(audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
+                }
+            }
+        });
+        audioRecycler.setAdapter(audioLinkAdap);
+        LinkClickAdapter videoLinkAdap = new LinkClickAdapter(activityContext, 1, result, new LinkClickAdapter.LinkClickInterface() {
+            @Override
+            public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
+                if(videoLists!=null){
+                    new DownloadLink().execute(videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
+
+                }
+            }
+        });
+        videoRecycler.setAdapter(videoLinkAdap);
+        popUpWindow = new PopupWindow(view, LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,true);
+        popUpWindow.showAtLocation(fetchedClickedView, Gravity.CENTER_VERTICAL,0,0);
+        setPopupTransitions(popUpWindow);
+        view.findViewById(R.id.dismissPopup).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                popUpWindow.dismiss();
+            }
+        });
+        popUpWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+
+            }
+        });
+        popUpWindow.setOutsideTouchable(false);
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private void setPopupTransitions(PopupWindow popUpWindow) {
+        if(popUpWindow!=null){
+            Transition enterTransition = new Fade(Fade.IN);
+            enterTransition.setDuration(5000);
+            enterTransition.setInterpolator(new LinearInterpolator());
+            popUpWindow.setEnterTransition(enterTransition);
+            Transition exitTransition = new Fade(Fade.OUT);
+            exitTransition.setDuration(5000);
+            exitTransition.setInterpolator(new LinearInterpolator());
+            popUpWindow.setExitTransition(exitTransition);
+        }
     }
 
 

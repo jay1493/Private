@@ -3,7 +3,7 @@
        android:shape="rectangle">
           
       <solid
-        android:color="#eae8e8" />
+        android:color="@color/background_drawable_1" />
     
 
 

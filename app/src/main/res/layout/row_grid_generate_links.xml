@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/d10">
+    <ImageView
+        android:id="@+id/dismissPopup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:srcCompat="@drawable/swap_popup"
+        android:alpha="1"
+        android:padding="@dimen/d10"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/background_drawable_1"
+            android:layout_below="@id/dismissPopup">
+            <RelativeLayout
+                android:id="@+id/mainCard_AudioLinks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|top">
+                <TextView
+                    android:id="@+id/audioLinkText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/d10"
+                    android:textColor="@color/off_white"
+                    android:text="@string/audio_links"/>
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/audioLinks"
+                    android:layout_below="@id/audioLinkText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                </android.support.v7.widget.RecyclerView>
+            </RelativeLayout>
+            <View android:layout_height="1dp" android:layout_width="match_parent" android:background="@color/background_drawable_4"/>
+            <RelativeLayout
+                android:id="@+id/mainCard_VideoLinks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/videoLinkText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/d10"
+                    android:textColor="@color/off_white"
+                    android:text="@string/video_links"/>
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/videoLinks"
+                    android:layout_below="@id/videoLinkText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                </android.support.v7.widget.RecyclerView>
+            </RelativeLayout>
+        </LinearLayout>
+
+</RelativeLayout>

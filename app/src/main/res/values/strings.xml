@@ -10,4 +10,6 @@
     <string name="fetching_download_links">Fetching download links for you...</string>
     <string name="getting_it_downloaded_for_you">Getting it downloaded for you...</string>
     <string name="download_complete">Download Complete</string>
+    <string name="audio_links">Audio Links</string>
+    <string name="video_links">Video Links</string>
 </resources>
