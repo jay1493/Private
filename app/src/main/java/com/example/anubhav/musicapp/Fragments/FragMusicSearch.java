@@ -641,6 +641,8 @@ public class FragMusicSearch extends Fragment {
 
     private void initiatePopupWindow(DownloadVidsModel result) {
         View view = LayoutInflater.from(activityContext).inflate(R.layout.row_grid_generate_links, null,false);
+        popUpWindow = new PopupWindow(view, LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,true);
+        popUpWindow.showAtLocation(fetchedClickedView, Gravity.CENTER_VERTICAL,0,0);
         RecyclerView audioRecycler = (RecyclerView) view.findViewById(R.id.audioLinks);
         RecyclerView videoRecycler = (RecyclerView) view.findViewById(R.id.videoLinks);
         audioRecycler.setLayoutManager(new GridLayoutManager(activityContext,3));
@@ -649,6 +651,7 @@ public class FragMusicSearch extends Fragment {
             @Override
             public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
                 if(audioLists!=null) {
+                    popUpWindow.dismiss();
                     new DownloadLink().execute(audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
                 }
             }
@@ -658,14 +661,13 @@ public class FragMusicSearch extends Fragment {
             @Override
             public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
                 if(videoLists!=null){
+                    popUpWindow.dismiss();
                     new DownloadLink().execute(videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
 
                 }
             }
         });
         videoRecycler.setAdapter(videoLinkAdap);
-        popUpWindow = new PopupWindow(view, LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,true);
-        popUpWindow.showAtLocation(fetchedClickedView, Gravity.CENTER_VERTICAL,0,0);
         setPopupTransitions(popUpWindow);
         view.findViewById(R.id.dismissPopup).setOnClickListener(new View.OnClickListener() {
             @Override
