@@ -12,4 +12,8 @@
     <string name="download_complete">Download Complete</string>
     <string name="audio_links">Audio Links</string>
     <string name="video_links">Video Links</string>
+    <string name="Songs">Songs</string>
+    <string name="Albums">Albums</string>
+    <string name="main_song_fragment_layout">main_song_fragment_layout</string>
+    <string name="main_song_fragment_position">main_song_fragment_position</string>
 </resources>

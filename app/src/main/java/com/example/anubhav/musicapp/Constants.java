@@ -17,4 +17,6 @@ public class Constants {
     public static final String NOT_USED_YTGRABBER_DOWNLOAD_LINKS = "https://ytgrabber.p.mashape.com/app/get/";
     public static final String FETCH_RESULTS_VIA_READING_HTML_OF_YOUTUBE_RESULTS_URL_1 = "https://www.googleapis.com/youtube/v3/search?order=viewCount&q=";
     public static final String FETCH_RESULTS_VIA_READING_HTML_OF_YOUTUBE_RESULTS_URL_2 = "&type=video&maxResults=20&part=snippet&fields=items(id/videoId,snippet/title,snippet/thumbnails)&key=";
+    public static final String main_song_fragment_layout = "main_song_fragment_layout";
+    public static final String main_song_fragment_position = "main_song_fragment_position";
 }

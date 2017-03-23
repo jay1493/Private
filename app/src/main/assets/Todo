@@ -1,4 +1,9 @@
 //Todo: Tasks
+0.) /*
+    * NOTE: Firstly save values obtained from cursor in SharedPrefs (List of models could be stored here)
+    * and IF AND ONLY IF the a new song is added..only then hit cursor loader, as it is taking very much
+    * time to load...Everytime...NOT NOTICED AGAIN....if happened again, then SOLVE...
+    */
 1.)Crashing on install - but runs fine when opened again from device.
 2.) Looking into the Content Observer in FRAGMUSIC to see if the downloaded music gets fetched here or not.
 3.) Modifying Layouts:

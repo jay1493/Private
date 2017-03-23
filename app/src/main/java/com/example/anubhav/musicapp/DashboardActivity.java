@@ -3,31 +3,21 @@ package com.example.anubhav.musicapp;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.LoaderManager;
 import android.content.Context;
-import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
-import android.database.Cursor;
-import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.CursorLoader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -41,18 +31,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Fragments.FragMusic;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
+import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
 import com.example.anubhav.musicapp.GNSDKComp.*;
-import com.google.android.youtube.player.YouTubeBaseActivity;
-import com.google.android.youtube.player.YouTubeInitializationResult;
-import com.google.android.youtube.player.YouTubePlayer;
-import com.google.android.youtube.player.YouTubePlayerView;
-import com.gracenote.gnsdk.GnAssetFetch;
 import com.gracenote.gnsdk.GnDescriptor;
 import com.gracenote.gnsdk.GnError;
 import com.gracenote.gnsdk.GnException;
@@ -100,13 +85,17 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private SurfaceHolder surfaceHolder;
     private EditText etSearchSong;
     private LinearLayout mainLayout;
-    private FragMusic fragMusic;
+    private MainSongsFragment mainSongFragment;
     private FragmentManager fragmentManager;
     private AnimationDrawable animationDrawable;
     private ImageView searchSong,listenSong;
     private Context context;
     private LinearLayout mainDashboardLayout;
-//    private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1991;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1992;
+    private final int Manifest_permission_WRITE_EXTERNAL_STORAGE = 1993;
+    private final int Manifest_permission_RECORD_AUDIO = 1994;
+//    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
 
     /**
      *
@@ -131,12 +120,14 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private volatile boolean			analyzingCollection 	 = false;
     private volatile boolean			analyzeCancelled 	 	 = false;
 
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_dashboard);
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
-        fragMusic = new FragMusic();
+        mainSongFragment = MainSongsFragment.getInstance(null);
         context = this;
         init();
         settingUpGnSDK();
@@ -148,7 +139,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         /*videoView.initialize(getResources().getString(R.string.youtubeAPI),this);*/
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.mainLayout,fragMusic,MUSICFRAG);
+        fragmentTransaction.add(R.id.mainLayout, mainSongFragment,MUSICFRAG);
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
         fragmentTransaction.addToBackStack(MUSICFRAG);
@@ -358,6 +349,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             audioProcessThread.start();
 
         }
+        permissions();
     }
     class AudioProcessRunnable implements Runnable {
 
@@ -386,7 +378,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                    case MUSICFRAG:
                        fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
                        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                       fragmentTransaction.replace(R.id.mainLayout,fragMusic);
+                       fragmentTransaction.replace(R.id.mainLayout, mainSongFragment);
                        fragmentTransaction.commit();
 
                        break;
@@ -436,35 +428,68 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     public void onAttachFragment(Fragment fragment) {
         super.onAttachFragment(fragment);
     }
-    /*   @TargetApi(Build.VERSION_CODES.M)
-    private void permissions() {
-        if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},Manifest_permission_READ_EXTERNAL_STORAGE);
-        }else{
-            if(fragMusic!=null) {
-                fragMusic.initializeLoader();
-            }else{
 
-            }
-        }
+
+       @TargetApi(Build.VERSION_CODES.M)
+    private void permissions() {
+           if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
+               requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+           }else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED) {
+               if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                   requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
+               }
+               if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                   requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, Manifest_permission_WRITE_EXTERNAL_STORAGE);
+
+               }
+               if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                   requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, Manifest_permission_RECORD_AUDIO);
+
+               }
+           }
         return;
 
     }
-*/
-   /* @Override
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
-            case Manifest_permission_READ_EXTERNAL_STORAGE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    fragMusic.initializeLoader();
+            case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+
                 } else {
                     // User refused to grant permission.
                     permissions();
                 }
                 break;
+            case Manifest_permission_READ_EXTERNAL_STORAGE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_WRITE_EXTERNAL_STORAGE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_RECORD_AUDIO:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+
         }
-    }*/
+    }
    private class SystemEvents implements IGnSystemEvents{
 
         @Override
