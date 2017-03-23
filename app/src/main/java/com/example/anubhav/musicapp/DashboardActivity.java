@@ -10,6 +10,7 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -148,8 +149,6 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         mainLayout.setBackgroundResource(R.drawable.background_dashboard);
         animationDrawable = (AnimationDrawable)mainLayout.getBackground();
         animationDrawable.start();
-        surfaceHolder = videoView.getHolder();
-        surfaceHolder.addCallback(this);
         etSearchSong.setOnClickListener(this);
         searchSong.setOnClickListener(this);
         etSearchSong.setOnEditorActionListener(this);
@@ -158,34 +157,9 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     }
 
     private void settingUpGnSDK() {
-        audioVisualDisplay = new AudioVisualDisplay((Activity)context,mainLayout,0,mainDashboardLayout);
-        gnsdkLicence = loadAssetAsString(gnsdkLicenseFilename);
-        try {
-            gnManager = new GnManager( context, gnsdkLicence, GnLicenseInputMode.kLicenseInputModeString );
-            gnManager.systemEventHandler( new SystemEvents());
-            gnUser = new GnUser( new GnUserStore(context), gnsdkClientId, gnsdkClientTag, appString );
-            GnStorageSqlite.enable();
-            GnLookupLocalStream.enable();
-            Thread localeThread = new Thread(
-                    new LocaleLoadRunnable(GnLocaleGroup.kLocaleGroupMusic,
-                            GnLanguage.kLanguageEnglish,
-                            GnRegion.kRegionGlobal,
-                            GnDescriptor.kDescriptorDefault,
-                            gnUser)
-            );
-            localeThread.start();
-            Thread ingestThread = new Thread( new LocalBundleIngestRunnable(context) );
-            ingestThread.start();
-            gnMicrophone = new AudioVisualizeAdapter( new GnMic(),audioVisualDisplay);
-            gnMusicIdStream = new GnMusicIdStream( gnUser, GnMusicIdStreamPreset.kPresetMicrophone, new MusicIDStreamEvents() );
-            gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataContent, true);
-            gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataSonicData, true);
-            gnMusicIdStream.options().resultSingle( true );
+        MyPrivateAsync myPrivateAsync = new MyPrivateAsync();
+        myPrivateAsync.execute();
 
-
-        } catch (GnException e) {
-            e.printStackTrace();
-        }
     }
 
     private String loadAssetAsString(String gnsdkLicenseFilename) {
@@ -337,6 +311,10 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     @Override
     protected void onResume() {
         super.onResume();
+        if(mediaPlayer == null){
+            surfaceHolder = videoView.getHolder();
+            surfaceHolder.addCallback(this);
+        }
         if(!animationDrawable.isRunning()){
             animationDrawable.start();
         }
@@ -578,6 +556,40 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         }
     }
 
+   class MyPrivateAsync extends AsyncTask{
 
+       @Override
+       protected String doInBackground(Object[] objects) {
+           audioVisualDisplay = new AudioVisualDisplay((Activity)context,mainLayout,0,mainDashboardLayout);
+           gnsdkLicence = loadAssetAsString(gnsdkLicenseFilename);
+           try {
+               gnManager = new GnManager( context, gnsdkLicence, GnLicenseInputMode.kLicenseInputModeString );
+               gnManager.systemEventHandler( new SystemEvents());
+               gnUser = new GnUser( new GnUserStore(context), gnsdkClientId, gnsdkClientTag, appString );
+               GnStorageSqlite.enable();
+               GnLookupLocalStream.enable();
+               Thread localeThread = new Thread(
+                       new LocaleLoadRunnable(GnLocaleGroup.kLocaleGroupMusic,
+                               GnLanguage.kLanguageEnglish,
+                               GnRegion.kRegionGlobal,
+                               GnDescriptor.kDescriptorDefault,
+                               gnUser)
+               );
+               localeThread.run();
+               Thread ingestThread = new Thread( new LocalBundleIngestRunnable(context) );
+               ingestThread.start();
+               gnMicrophone = new AudioVisualizeAdapter( new GnMic(),audioVisualDisplay);
+               gnMusicIdStream = new GnMusicIdStream( gnUser, GnMusicIdStreamPreset.kPresetMicrophone, new MusicIDStreamEvents() );
+               gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataContent, true);
+               gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataSonicData, true);
+               gnMusicIdStream.options().resultSingle( true );
+
+
+           } catch (GnException e) {
+               e.printStackTrace();
+           }
+           return null;
+       }
+   }
 
 }
