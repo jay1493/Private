@@ -52,7 +52,7 @@
                     android:layout_weight="1"
                     app:srcCompat ="@drawable/listen_song"
                     android:layout_gravity="center"
-                    android:visibility="gone"/>
+                    android:visibility="visible"/>
             </LinearLayout>
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar_dashboard"

@@ -1,12 +1,34 @@
 //Todo: Tasks
 //TOdo: Complete 3 & 4 points till tomorrow(24th).
+===============================================================
+             /**
+                PRIORITY TASKS IN ORDER
+             */
+================================================================
+
+4.)Prepare Songs section (Songs should be visible)
+3.) Modifying Layouts:
+     a.)
+
+5.)Fix Keyboard Issue of Search Song EditText
+==========================================================================
+           /**
+              SECONDARY TASKS
+            */
+===========================================================================
+
+
 0.) /*
     * NOTE: Firstly save values obtained from cursor in SharedPrefs (List of models could be stored here)
     * and IF AND ONLY IF the a new song is added..only then hit cursor loader, as it is taking very much
     * time to load...Everytime...NOT NOTICED AGAIN....if happened again, then SOLVE...
     */
-1.)Crashing on install - but runs fine when opened again from device.
+    -- It looks fine till now
+
+
 2.) Looking into the Content Observer in FRAGMUSIC to see if the downloaded music gets fetched here or not.
-3.) Modifying Layouts:
-     a.) The Gracenote album search layout is totally broken fix that...
-4.)Prepare Songs section (Songs should be visible)
+    --(It looks like it does)
+
+7.)Change GraceNote Logo and Decrease Image Sizes, Remove any Illegal Content.
+
+==================================================================================

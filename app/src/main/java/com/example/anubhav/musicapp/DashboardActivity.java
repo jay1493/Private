@@ -20,6 +20,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -33,47 +35,35 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.acrcloud.rec.sdk.ACRCloudClient;
+import com.acrcloud.rec.sdk.ACRCloudConfig;
+import com.acrcloud.rec.sdk.IACRCloudListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
-import com.example.anubhav.musicapp.Fragments.FragMusic;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
-import com.example.anubhav.musicapp.GNSDKComp.*;
-import com.gracenote.gnsdk.GnDescriptor;
-import com.gracenote.gnsdk.GnError;
-import com.gracenote.gnsdk.GnException;
-import com.gracenote.gnsdk.GnLanguage;
-import com.gracenote.gnsdk.GnLicenseInputMode;
-import com.gracenote.gnsdk.GnList;
-import com.gracenote.gnsdk.GnLocale;
-import com.gracenote.gnsdk.GnLocaleGroup;
-import com.gracenote.gnsdk.GnLookupData;
-import com.gracenote.gnsdk.GnLookupLocalStream;
-import com.gracenote.gnsdk.GnManager;
-import com.gracenote.gnsdk.GnMic;
-import com.gracenote.gnsdk.GnMusicIdStream;
-import com.gracenote.gnsdk.GnMusicIdStreamIdentifyingStatus;
-import com.gracenote.gnsdk.GnMusicIdStreamPreset;
-import com.gracenote.gnsdk.GnMusicIdStreamProcessingStatus;
-import com.gracenote.gnsdk.GnRegion;
-import com.gracenote.gnsdk.GnResponseAlbums;
-import com.gracenote.gnsdk.GnStatus;
-import com.gracenote.gnsdk.GnStorageSqlite;
-import com.gracenote.gnsdk.GnUser;
-import com.gracenote.gnsdk.GnUserStore;
-import com.gracenote.gnsdk.IGnCancellable;
-import com.gracenote.gnsdk.IGnMusicIdStreamEvents;
-import com.gracenote.gnsdk.IGnSystemEvents;
+import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
+import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
+import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
+import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
+import com.google.gson.JsonParser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by anubhav on 19/2/17.
  */
 
-public class DashboardActivity extends AppCompatActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener {
+public class DashboardActivity extends AppCompatActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener {
 
     public static final String MUSICFRAGSERACH = "MUSICFRAGSERACH";
     public static final String MUSICFRAG = "MUSICFRAG";
@@ -96,56 +86,46 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1992;
     private final int Manifest_permission_WRITE_EXTERNAL_STORAGE = 1993;
     private final int Manifest_permission_RECORD_AUDIO = 1994;
+    private final int Manifest_permission_LOCATION = 1995;
 //    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
+    private static final String 		appString				= Constants.APP_NAME;
+    private boolean activityCreatedForFirstTime = true;
+    private AssetFileDescriptor videoLoadingFromAssets;
 
     /**
-     *
-     * GNSDK Params...
+     *  Params of Audio FingerPrint
      */
-    static final String 				gnsdkClientId 			= Constants.GNSDK_CLIENT_ID;
-    static final String 				gnsdkClientTag 			= Constants.GNSDK_CLIENT_TAG;
-    static final String 				gnsdkLicenseFilename 	= "licence.txt";
-    private static final String    		gnsdkLogFilename 		= "sample.log";
-    private static final String 		appString				= Constants.APP_NAME;
-    private String gnsdkLicence ="";
-    private GnManager gnManager;
-    private GnUser gnUser;
-    private AudioVisualizeAdapter gnMicrophone;
-    private GnMusicIdStream gnMusicIdStream;
-    private AudioVisualDisplay audioVisualDisplay;
+    private ACRCloudClient mClient;
+    private ACRCloudConfig mConfig;
 
-    protected volatile boolean 			lastLookup_local		 = false;	// indicates whether the match came from local storage
-    protected volatile long				lastLookup_matchTime 	 = 0;  		// total lookup time for query
-    protected volatile long				lastLookup_startTime;  				// start time of query
-    private volatile boolean			audioProcessingStarted   = false;
-    private volatile boolean			analyzingCollection 	 = false;
-    private volatile boolean			analyzeCancelled 	 	 = false;
+    private TextView mVolume, mResult, tv_time;
 
+    private boolean mProcessing = false;
+    private boolean initState = false;
 
+    private String path = "";
+    private AudioVisualize audioVisualize;
+
+    private long startTime = 0;
+    private long stopTime = 0;
+    static{
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
+
+    private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_dashboard);
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
-        mainSongFragment = MainSongsFragment.getInstance(null);
         context = this;
         init();
-        settingUpGnSDK();
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         GlideDrawableImageViewTarget imageViewTarget = new GlideDrawableImageViewTarget(videoLoader);
         Glide.with(this).load(R.raw.ripple1).into(imageViewTarget);
-        /*videoView.initialize(getResources().getString(R.string.youtubeAPI),this);*/
-        fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.mainLayout, mainSongFragment,MUSICFRAG);
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-        fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
-        fragmentTransaction.addToBackStack(MUSICFRAG);
-        fragmentTransaction.commit();
-//        permissions();
         mainLayout.setBackgroundResource(R.drawable.background_dashboard);
         animationDrawable = (AnimationDrawable)mainLayout.getBackground();
         animationDrawable.start();
@@ -153,40 +133,58 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         searchSong.setOnClickListener(this);
         etSearchSong.setOnEditorActionListener(this);
         listenSong.setOnClickListener(this);
-
+        setUpAudioFingerPrinting();
     }
 
-    private void settingUpGnSDK() {
-        MyPrivateAsync myPrivateAsync = new MyPrivateAsync();
-        myPrivateAsync.execute();
-
-    }
-
-    private String loadAssetAsString(String gnsdkLicenseFilename) {
-        InputStream inputStream = null;
-        String assetString ="";
-        try {
-            inputStream  =  this.getAssets().open(gnsdkLicenseFilename);
-            if(inputStream!=null){
-                java.util.Scanner s = new java.util.Scanner(inputStream).useDelimiter("\\A");
-
-                assetString = s.hasNext() ? s.next() : "";
-                inputStream.close();
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void setUpAudioFingerPrinting() {
+        audioVisualize = new AudioVisualize(this,mainLayout,mainDashboardLayout);
+        audioVisualize.startVisualize();
+        path = "/sdcard/MyApp";
+        File file = new File(path);
+        if(!file.exists()){
+            file.mkdirs();
         }
-        return assetString;
+        this.mConfig = new ACRCloudConfig();
+        this.mConfig.acrcloudListener = this;
+        this.mConfig.context = this;
+        this.mConfig.host = Constants.ACR_HOST;
+        this.mConfig.dbPath = path; // offline db path, you can change it with other path which this app can access.
+        this.mConfig.accessKey = Constants.ACR_ACCESS_KEY;
+        this.mConfig.accessSecret = Constants.ACR_SECRET_KEY;
+        this.mConfig.reqMode = ACRCloudConfig.ACRCloudRecMode.REC_MODE_REMOTE;
+        //this.mConfig.reqMode = ACRCloudConfig.ACRCloudRecMode.REC_MODE_LOCAL;
+        //this.mConfig.reqMode = ACRCloudConfig.ACRCloudRecMode.REC_MODE_BOTH;
+
+        this.mClient = new ACRCloudClient();
+        this.initState = this.mClient.initWithConfig(this.mConfig);
+        if (this.initState) {
+            this.mClient.startPreRecord(3000); //start prerecord, you can call "this.mClient.stopPreRecord()" to stop prerecord.
+        }
     }
+
+    private void setUpInitialHomeFragment() {
+        mainSongFragment = MainSongsFragment.getInstance(null);
+        fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.mainLayout, mainSongFragment,MUSICFRAG);
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
+        fragmentTransaction.addToBackStack(MUSICFRAG);
+        fragmentTransaction.commit();
+    }
+
 
 
     private void init() {
+        try {
+            videoLoadingFromAssets = getAssets().openFd("video.3gp");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         mainDashboardLayout = (LinearLayout)findViewById(R.id.mainDashboard);
         searchSong = (ImageView)findViewById(R.id.searchSong);
         listenSong = (ImageView) findViewById(R.id.listenSong);
         toolbar = (Toolbar)findViewById(R.id.toolbar_dashboard);
-        videoView = (SurfaceView) findViewById(R.id.video);
         videoLoader = (ImageView)findViewById(R.id.videoLoader);
         etSearchSong = (EditText)findViewById(R.id.et_searchSong);
         mainLayout = (LinearLayout)findViewById(R.id.mainLayout);
@@ -194,11 +192,16 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        if(surfaceHolder!=null) {
+            initializeMediaPlayer(surfaceHolder);
+        }
+    }
+
+    private void initializeMediaPlayer(SurfaceHolder surfaceHolder) {
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setDisplay(surfaceHolder);
         try {
-            AssetFileDescriptor afd = getAssets().openFd("video.3gp");
-            mediaPlayer.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(), afd.getLength());
+            mediaPlayer.setDataSource(videoLoadingFromAssets.getFileDescriptor(), videoLoadingFromAssets.getStartOffset(), videoLoadingFromAssets.getLength());
             mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setLooping(true);
@@ -225,7 +228,9 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
+        surfaceHolder.removeCallback(this);
+        surfaceHolder = null;
+        mediaPlayer = null;
     }
 
     @Override
@@ -239,23 +244,21 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.listenSong:
-                try {
-                    audioVisualDisplay.setDisplay(true,false);
-
-                    gnMusicIdStream.identifyAlbumAsync();
-                    if ( gnMusicIdStream != null ) {
-
-                        // Create a thread to process the data pulled from GnMic
-                        // Internally pulling data is a blocking call, repeatedly called until
-                        // audio processing is stopped. This cannot be called on the main thread.
-                        Thread audioProcessThread = new Thread(new AudioProcessRunnable());
-                        audioProcessThread.start();
-
+                if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listen_song).getConstantState()){
+                    if(mediaPlayer!=null){
+                        mediaPlayer.setVolume(0f,0f);
                     }
-                } catch (GnException e) {
-                    e.printStackTrace();
+                    startFingerprinting();
+                    listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
+                }else{
+                    if(mediaPlayer!=null){
+                        mediaPlayer.setVolume(1f,1f);
+                    }
+                    stopFingerprinting();
+                    cancel();
+                    listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
+
                 }
-                lastLookup_startTime = SystemClock.elapsedRealtime();
                 break;
             case R.id.searchSong:
                  searchSong();
@@ -280,70 +283,49 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onPause() {
+        super.onPause();
+        activityCreatedForFirstTime = false;
         if(mediaPlayer!=null){
+            surfaceHolder.removeCallback(this);
+            surfaceHolder = null;
             mediaPlayer.release();
             mediaPlayer=null;
+
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        activityCreatedForFirstTime = false;
+        if(mediaPlayer!=null){
+            surfaceHolder.removeCallback(this);
+            surfaceHolder = null;
+            mediaPlayer.release();
+            mediaPlayer=null;
+
         }
         if(animationDrawable.isRunning()){
             animationDrawable.stop();
         }
 
-        if ( gnMusicIdStream != null ) {
-
-            try {
-
-                // to ensure no pending identifications deliver results while your app is
-                // paused it is good practice to call cancel
-                // it is safe to call identifyCancel if no identify is pending
-                gnMusicIdStream.identifyCancel();
-
-                // stopping audio processing stops the audio processing thread started
-                // in onResume
-                gnMusicIdStream.audioProcessStop();
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(mediaPlayer == null){
-            surfaceHolder = videoView.getHolder();
-            surfaceHolder.addCallback(this);
+        videoView = (SurfaceView) findViewById(R.id.video);
+        if (videoLoader.getVisibility() == View.GONE) {
+            videoLoader.setVisibility(View.VISIBLE);
         }
+        surfaceHolder = videoView.getHolder();
+        surfaceHolder.addCallback(this);
+
         if(!animationDrawable.isRunning()){
             animationDrawable.start();
         }
-        if ( gnMusicIdStream != null ) {
-
-            // Create a thread to process the data pulled from GnMic
-            // Internally pulling data is a blocking call, repeatedly called until
-            // audio processing is stopped. This cannot be called on the main thread.
-            Thread audioProcessThread = new Thread(new AudioProcessRunnable());
-            audioProcessThread.start();
-
-        }
         permissions();
-    }
-    class AudioProcessRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            try {
-
-                // start audio processing with GnMic, GnMusicIdStream pulls data from GnMic internally
-                gnMusicIdStream.audioProcessStart( gnMicrophone );
-
-            } catch (GnException e) {
-
-                Log.e( appString, e.errorCode() + ", " + e.errorDescription() + ", " + e.errorModule() );
-
-            }
-        }
     }
 
     @Override
@@ -408,23 +390,34 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     }
 
 
-       @TargetApi(Build.VERSION_CODES.M)
     private void permissions() {
-           if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
-               requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
-           }else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED) {
-               if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                   requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
-               }
-               if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                   requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, Manifest_permission_WRITE_EXTERNAL_STORAGE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission_group.LOCATION)!=PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission_group.LOCATION}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission_group.LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+                if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
+                }
+                if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, Manifest_permission_WRITE_EXTERNAL_STORAGE);
 
-               }
-               if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                   requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, Manifest_permission_RECORD_AUDIO);
-
-               }
-           }
+                }
+                if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, Manifest_permission_RECORD_AUDIO);
+                }
+                if(context.checkSelfPermission(Manifest.permission_group.LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission_group.LOCATION}, Manifest_permission_LOCATION);
+                }
+            }else{
+                if(activityCreatedForFirstTime) {
+                    setUpInitialHomeFragment();
+                }
+            }
+            return;
+        }
+        if(activityCreatedForFirstTime) {
+            setUpInitialHomeFragment();
+        }
         return;
 
     }
@@ -434,8 +427,8 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
+                    setUpInitialHomeFragment();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -443,7 +436,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 break;
             case Manifest_permission_READ_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+                    setUpInitialHomeFragment();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -451,7 +444,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 break;
             case Manifest_permission_WRITE_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+                    setUpInitialHomeFragment();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -459,7 +452,15 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 break;
             case Manifest_permission_RECORD_AUDIO:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+                    setUpInitialHomeFragment();
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_LOCATION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    setUpInitialHomeFragment();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -468,128 +469,113 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
         }
     }
-   private class SystemEvents implements IGnSystemEvents{
 
-        @Override
-        public void localeUpdateNeeded(GnLocale gnLocale) {
-            Thread localeUpdateThread = new Thread(new LocaleUpdateRunnable(gnLocale,gnUser));
-            localeUpdateThread.start();
-        }
 
-        @Override
-        public void listUpdateNeeded(GnList gnList) {
-            Thread listUpdateThread = new Thread(new ListUpdateRunnable(gnList,gnUser));
-            listUpdateThread.start();
-        }
-
-        @Override
-        public void systemMemoryWarning(long l, long l1) {
-
-        }
-    }
-    private class MusicIDStreamEvents implements IGnMusicIdStreamEvents {
-
-        HashMap<String, String> gnStatus_to_displayStatus;
-
-        public MusicIDStreamEvents(){
-            gnStatus_to_displayStatus = new HashMap<String,String>();
-            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingStarted.toString(), "Identification started");
-            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingFpGenerated.toString(), "Fingerprinting complete");
-            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingLocalQueryStarted.toString(), "Lookup started");
-            gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingOnlineQueryStarted.toString(), "Lookup started");
-//			gnStatus_to_displayStatus.put(GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingEnded.toString(), "Identification complete");
-        }
-
-        @Override
-        public void statusEvent(GnStatus status, long percentComplete, long bytesTotalSent, long bytesTotalReceived, IGnCancellable cancellable ) {
-
-        }
-
-        @Override
-        public void musicIdStreamProcessingStatusEvent(GnMusicIdStreamProcessingStatus status, IGnCancellable canceller ) {
-
-            if(GnMusicIdStreamProcessingStatus.kStatusProcessingAudioStarted.compareTo(status) == 0)
-            {
-                audioProcessingStarted = true;
-                ((Activity)context).runOnUiThread(new Runnable (){
-                    public void run(){
-                        listenSong.setVisibility(View.VISIBLE);
+    @Override
+    public void onResult(String s) {
+        listenSong.performClick();
+        audioFingerPrintingResultModel = new AudioFingerPrintingResultModel();
+        List<AudioFingerPrintingResultMusicModel> musicList = new ArrayList<>();
+        List<AudioFingerprintResultsGenreModel> genreList = new ArrayList<>();
+        List<AudioFingerprintResultsArtistModel> artistList = new ArrayList<>();
+        try {
+            JSONObject jsonObject = new JSONObject(s);
+            if(jsonObject.has("status")){
+                JSONObject statusObject = jsonObject.getJSONObject("status");
+                if(String.valueOf(statusObject.get("msg")).equalsIgnoreCase(context.getResources().getString(R.string.Success)) && (Integer)(statusObject.get("code"))==(new Integer(0))){
+                    //Success
+                    audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
+                    audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
+                    JSONObject metaData = jsonObject.getJSONObject("metadata");
+                    JSONArray musicArray = metaData.getJSONArray("music");
+                    for(int i=0;i<musicArray.length();i++){
+                        JSONObject musicObject = (JSONObject) musicArray.get(i);
+                        AudioFingerPrintingResultMusicModel music = new AudioFingerPrintingResultMusicModel();
+                        if(musicObject.has("artists")) {
+                            JSONArray artistArray = musicObject.getJSONArray("artists");
+                            for (int j=0;j<artistArray.length();j++){
+                                AudioFingerprintResultsArtistModel artist = new AudioFingerprintResultsArtistModel();
+                                JSONObject artistObject = (JSONObject) artistArray.get(j);
+                                artist.setArtistName(String.valueOf(artistObject.get("name")));
+                                artistList.add(artist);
+                            }
+                            music.setArtistModel(artistList);
+                        }
+                        if(musicObject.has("title")){
+                            music.setSongTitle(String.valueOf(musicObject.get("title")));
+                        }
+                        if(musicObject.has("genres")){
+                            JSONArray genreArray = musicObject.getJSONArray("genres");
+                            for (int j=0;j<genreArray.length();j++){
+                                AudioFingerprintResultsGenreModel genre = new AudioFingerprintResultsGenreModel();
+                                JSONObject genreObject = (JSONObject) genreArray.get(j);
+                                genre.setGenreName(String.valueOf(genreObject.get("name")));
+                                genreList.add(genre);
+                            }
+                            music.setGenreModel(genreList);
+                        }
+                        JSONObject albumObject = musicObject.getJSONObject("album");
+                        music.setAlbum(String.valueOf(albumObject.get("name")));
+                        musicList.add(music);
                     }
-                });
+                    audioFingerPrintingResultModel.setMusicList(musicList);
 
+                }else{
+                    //Failure
+                    audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
+                    audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
+                    audioFingerPrintingResultModel.setMusicList(null);
+                }
             }
-
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
-        @Override
-        public void musicIdStreamIdentifyingStatusEvent( GnMusicIdStreamIdentifyingStatus status, IGnCancellable canceller ) {
-            if(gnStatus_to_displayStatus.containsKey(status.toString())){
-                //Give status of Latest Music-Id Stream Lookup...
-            }
+    }
 
-            if(status.compareTo( GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingLocalQueryStarted ) == 0 ){
-                lastLookup_local = true;
-            }
-            else if(status.compareTo( GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingOnlineQueryStarted ) == 0){
-                lastLookup_local = false;
-            }
+    @Override
+    public void onVolumeChanged(double v) {
+        audioVisualize.changeVisualization(true,(float)v);
+    }
 
-            if ( status == GnMusicIdStreamIdentifyingStatus.kStatusIdentifyingEnded )
-            {
-//                setUIState( UIState.READY );
-            }
-        }
-
-
-        @Override
-        public void musicIdStreamAlbumResult(GnResponseAlbums result, IGnCancellable canceller ) {
-            lastLookup_matchTime = SystemClock.elapsedRealtime() - lastLookup_startTime;
-            ((Activity)context).runOnUiThread(new UpdateResultsRunnable(result,mainLayout,context,gnUser));
-        }
-
-        @Override
-        public void musicIdStreamIdentifyCompletedWithError(GnError error) {
-            if ( error.isCancelled() )
-                Toast.makeText(context, "Cancelled Lookup For Music-Id Stream...", Toast.LENGTH_SHORT).show();
-            else
-                Toast.makeText(context, "Oops! Got an error while looking for Music Stream: "+error.errorDescription(), Toast.LENGTH_SHORT).show();
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (this.mClient != null) {
+            this.mClient.release();
+            this.initState = false;
+            this.mClient = null;
         }
     }
 
-   class MyPrivateAsync extends AsyncTask{
+    private void startFingerprinting(){
+        if (!this.initState) {
+            Toast.makeText(this, "Oops!, an error seems to occur.Try Again Later!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-       @Override
-       protected String doInBackground(Object[] objects) {
-           audioVisualDisplay = new AudioVisualDisplay((Activity)context,mainLayout,0,mainDashboardLayout);
-           gnsdkLicence = loadAssetAsString(gnsdkLicenseFilename);
-           try {
-               gnManager = new GnManager( context, gnsdkLicence, GnLicenseInputMode.kLicenseInputModeString );
-               gnManager.systemEventHandler( new SystemEvents());
-               gnUser = new GnUser( new GnUserStore(context), gnsdkClientId, gnsdkClientTag, appString );
-               GnStorageSqlite.enable();
-               GnLookupLocalStream.enable();
-               Thread localeThread = new Thread(
-                       new LocaleLoadRunnable(GnLocaleGroup.kLocaleGroupMusic,
-                               GnLanguage.kLanguageEnglish,
-                               GnRegion.kRegionGlobal,
-                               GnDescriptor.kDescriptorDefault,
-                               gnUser)
-               );
-               localeThread.run();
-               Thread ingestThread = new Thread( new LocalBundleIngestRunnable(context) );
-               ingestThread.start();
-               gnMicrophone = new AudioVisualizeAdapter( new GnMic(),audioVisualDisplay);
-               gnMusicIdStream = new GnMusicIdStream( gnUser, GnMusicIdStreamPreset.kPresetMicrophone, new MusicIDStreamEvents() );
-               gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataContent, true);
-               gnMusicIdStream.options().lookupData(GnLookupData.kLookupDataSonicData, true);
-               gnMusicIdStream.options().resultSingle( true );
+        if (!mProcessing) {
+            mProcessing = true;
+            if (this.mClient == null || !this.mClient.startRecognize()) {
+                mProcessing = false;
+            }
+            startTime = System.currentTimeMillis();
+        }
+    }
 
+    private void stopFingerprinting(){
+        if (mProcessing && this.mClient != null) {
+            this.mClient.stopRecordToRecognize();
+        }
+        mProcessing = false;
 
-           } catch (GnException e) {
-               e.printStackTrace();
-           }
-           return null;
-       }
-   }
-
+        stopTime = System.currentTimeMillis();
+        audioVisualize.changeVisualization(false,0f);
+    }
+    private void cancel() {
+        if (mProcessing && this.mClient != null) {
+            mProcessing = false;
+            this.mClient.cancel();
+        }
+    }
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MyMusicApp</string>
+    <string name="app_name">MusicApp</string>
     <string name="Search_a_song">Search a song here...</string>
     <string name="dashboardVideoLink">ytcropper.com/cropped/RP58a97f821e1fe</string>
     <string name="There_seems_a_problem">There seems a problem connecting with our servers. Please try again later...</string>
@@ -16,4 +16,5 @@
     <string name="Albums">Albums</string>
     <string name="main_song_fragment_layout">main_song_fragment_layout</string>
     <string name="main_song_fragment_position">main_song_fragment_position</string>
+    <string name="Success">Success</string>
 </resources>

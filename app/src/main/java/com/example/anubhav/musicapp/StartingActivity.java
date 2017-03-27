@@ -1,25 +1,34 @@
 package com.example.anubhav.musicapp;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
-import com.example.anubhav.musicapp.Animations.LoginAnimation;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by anubhav on 16/2/17.
@@ -33,14 +42,19 @@ public class StartingActivity extends AppCompatActivity {
     private Random random;
     private Resources res;
     private boolean running = true;
-
+    private Context context;
+    private static final String 		appString				= Constants.APP_NAME;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    /*    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+                Log.e("Error"+Thread.currentThread().getStackTrace()[2],paramThrowable.getLocalizedMessage());
+            }
+        });*/
         setContentView(R.layout.activity_main);
         init();
-    /*    LoginAnimation loginAnimation = new LoginAnimation(mainImage);
-        loginAnimation.animate(images);*/
+        context = this;
         final Drawable backgrounds[] = new Drawable[2];
         res = getResources();
         final Handler handler = new Handler();
@@ -64,7 +78,16 @@ public class StartingActivity extends AppCompatActivity {
         logoName.setTypeface(typeface,Typeface.BOLD_ITALIC);
         GlideDrawableImageViewTarget glideDrawableImageViewTarget = new GlideDrawableImageViewTarget(mainLoader);
         Glide.with(this).load(R.raw.infinity1).into(glideDrawableImageViewTarget);
+        mainImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(StartingActivity.this,DashboardActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
+
 
     private void init() {
         random = new Random(System.currentTimeMillis());
@@ -84,5 +107,17 @@ public class StartingActivity extends AppCompatActivity {
         }else{
             end = res.getDrawable(images.get(pos+1));
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        running = true;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        running = false;
     }
 }
