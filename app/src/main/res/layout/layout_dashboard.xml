@@ -85,7 +85,19 @@
         android:padding="20dp"
         android:background="#000000"
         android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/albumSearchView"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/fragmentView"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
+        </LinearLayout>
 
 
     </LinearLayout>

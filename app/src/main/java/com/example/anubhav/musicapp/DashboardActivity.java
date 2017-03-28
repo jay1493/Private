@@ -1,8 +1,6 @@
 package com.example.anubhav.musicapp;
 
 import android.Manifest;
-import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -10,24 +8,25 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -40,13 +39,13 @@ import com.acrcloud.rec.sdk.ACRCloudConfig;
 import com.acrcloud.rec.sdk.IACRCloudListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+import com.example.anubhav.musicapp.Adapters.FingerprintResultsAdapter;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
-import com.google.gson.JsonParser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -54,9 +53,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -113,6 +110,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     }
 
     private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
+    private LinearLayout fragmentLayout,albumSearchLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -134,10 +132,11 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         etSearchSong.setOnEditorActionListener(this);
         listenSong.setOnClickListener(this);
         setUpAudioFingerPrinting();
+
     }
 
     private void setUpAudioFingerPrinting() {
-        audioVisualize = new AudioVisualize(this,mainLayout,mainDashboardLayout);
+        audioVisualize = new AudioVisualize(this,albumSearchLayout,mainDashboardLayout);
         audioVisualize.startVisualize();
         path = Constants.LOCAL_FINGERPRINT_PATH;
         File file = new File(path);
@@ -166,7 +165,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         mainSongFragment = MainSongsFragment.getInstance(null);
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.mainLayout, mainSongFragment,MUSICFRAG);
+        fragmentTransaction.add(R.id.fragmentView, mainSongFragment,MUSICFRAG);
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
         fragmentTransaction.addToBackStack(MUSICFRAG);
@@ -188,6 +187,8 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         videoLoader = (ImageView)findViewById(R.id.videoLoader);
         etSearchSong = (EditText)findViewById(R.id.et_searchSong);
         mainLayout = (LinearLayout)findViewById(R.id.mainLayout);
+        fragmentLayout = (LinearLayout)findViewById(R.id.fragmentView);
+        albumSearchLayout = (LinearLayout)findViewById(R.id.albumSearchView);
     }
 
     @Override
@@ -248,12 +249,14 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                     if(mediaPlayer!=null){
                         mediaPlayer.setVolume(0f,0f);
                     }
+                    resetAlbumSearchLayout(false);
                     startFingerprinting();
                     listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
                 }else{
                     if(mediaPlayer!=null){
                         mediaPlayer.setVolume(1f,1f);
                     }
+                    resetAlbumSearchLayout(true);
                     stopFingerprinting();
                     cancel();
                     listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
@@ -275,7 +278,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                     FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
                     fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
                     fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                    fragmentTransaction.replace(R.id.mainLayout, fragMusicSearch);
+                    fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch);
                     fragmentTransaction.commit();
                 }
                 break;
@@ -338,7 +341,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                    case MUSICFRAG:
                        fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
                        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                       fragmentTransaction.replace(R.id.mainLayout, mainSongFragment);
+                       fragmentTransaction.replace(R.id.fragmentView, mainSongFragment);
                        fragmentTransaction.commit();
 
                        break;
@@ -374,7 +377,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
                    fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
                    fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                   fragmentTransaction.replace(R.id.mainLayout, fragMusicSearch, MUSICFRAGSERACH);
+                   fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch, MUSICFRAGSERACH);
                    fragmentTransaction.commit();
 
                }
@@ -394,7 +397,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
                 requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission_group.LOCATION}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
-            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission_group.LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
                 if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
                 }
@@ -408,7 +411,8 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 if(context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, Manifest_permission_LOCATION);
                 }
-            }else{
+            }
+            else{
                 if(activityCreatedForFirstTime) {
                     setUpInitialHomeFragment();
                 }
@@ -473,7 +477,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     @Override
     public void onResult(String s) {
-        resetListenSong();
+        resetListenSongVisualizationLayout();
         audioFingerPrintingResultModel = new AudioFingerPrintingResultModel();
         List<AudioFingerPrintingResultMusicModel> musicList = new ArrayList<>();
         List<AudioFingerprintResultsGenreModel> genreList = new ArrayList<>();
@@ -482,49 +486,60 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             JSONObject jsonObject = new JSONObject(s);
             if(jsonObject.has("status")){
                 JSONObject statusObject = jsonObject.getJSONObject("status");
-                if(String.valueOf(statusObject.get("msg")).equalsIgnoreCase(context.getResources().getString(R.string.Success)) && (Integer)(statusObject.get("code"))==(new Integer(0))){
+                if(String.valueOf(statusObject.get("msg")).equalsIgnoreCase(context.getResources().getString(R.string.Success)) && ((Integer)(statusObject.get("code"))).equals(Integer.valueOf(0))){
                     //Success
                     audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
                     audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
-                    JSONObject metaData = jsonObject.getJSONObject("metadata");
-                    JSONArray musicArray = metaData.getJSONArray("music");
-                    for(int i=0;i<musicArray.length();i++){
-                        JSONObject musicObject = (JSONObject) musicArray.get(i);
-                        AudioFingerPrintingResultMusicModel music = new AudioFingerPrintingResultMusicModel();
-                        if(musicObject.has("artists")) {
-                            JSONArray artistArray = musicObject.getJSONArray("artists");
-                            for (int j=0;j<artistArray.length();j++){
-                                AudioFingerprintResultsArtistModel artist = new AudioFingerprintResultsArtistModel();
-                                JSONObject artistObject = (JSONObject) artistArray.get(j);
-                                artist.setArtistName(String.valueOf(artistObject.get("name")));
-                                artistList.add(artist);
+                    if(jsonObject.has("metadata")){
+                        JSONObject metaData = jsonObject.getJSONObject("metadata");
+                        if(metaData.has("music")){
+                            JSONArray musicArray = metaData.getJSONArray("music");
+                            for(int i=0;i<musicArray.length();i++){
+                                JSONObject musicObject = (JSONObject) musicArray.get(i);
+                                AudioFingerPrintingResultMusicModel music = new AudioFingerPrintingResultMusicModel();
+                                if(musicObject.has("artists")) {
+                                    JSONArray artistArray = musicObject.getJSONArray("artists");
+                                    for (int j=0;j<artistArray.length();j++){
+                                        AudioFingerprintResultsArtistModel artist = new AudioFingerprintResultsArtistModel();
+                                        JSONObject artistObject = (JSONObject) artistArray.get(j);
+                                        artist.setArtistName(String.valueOf(artistObject.get("name")));
+                                        artistList.add(artist);
+                                    }
+                                    music.setArtistModel(artistList);
+                                }
+                                if(musicObject.has("title")){
+                                    music.setSongTitle(String.valueOf(musicObject.get("title")));
+                                }
+                                if(musicObject.has("genres")){
+                                    JSONArray genreArray = musicObject.getJSONArray("genres");
+                                    for (int j=0;j<genreArray.length();j++){
+                                        AudioFingerprintResultsGenreModel genre = new AudioFingerprintResultsGenreModel();
+                                        JSONObject genreObject = (JSONObject) genreArray.get(j);
+                                        genre.setGenreName(String.valueOf(genreObject.get("name")));
+                                        genreList.add(genre);
+                                    }
+                                    music.setGenreModel(genreList);
+                                }
+                                JSONObject albumObject = musicObject.getJSONObject("album");
+                                music.setAlbum(String.valueOf(albumObject.get("name")));
+                                musicList.add(music);
                             }
-                            music.setArtistModel(artistList);
+                            audioFingerPrintingResultModel.setMusicList(musicList);
+                            fingerprintingRecordsFound(audioFingerPrintingResultModel);
+                        }else{
+                            Toast.makeText(context, "Oops! No Match Found Here!", Toast.LENGTH_SHORT).show();
                         }
-                        if(musicObject.has("title")){
-                            music.setSongTitle(String.valueOf(musicObject.get("title")));
-                        }
-                        if(musicObject.has("genres")){
-                            JSONArray genreArray = musicObject.getJSONArray("genres");
-                            for (int j=0;j<genreArray.length();j++){
-                                AudioFingerprintResultsGenreModel genre = new AudioFingerprintResultsGenreModel();
-                                JSONObject genreObject = (JSONObject) genreArray.get(j);
-                                genre.setGenreName(String.valueOf(genreObject.get("name")));
-                                genreList.add(genre);
-                            }
-                            music.setGenreModel(genreList);
-                        }
-                        JSONObject albumObject = musicObject.getJSONObject("album");
-                        music.setAlbum(String.valueOf(albumObject.get("name")));
-                        musicList.add(music);
+                    }else{
+                        Toast.makeText(context, "Oops! No Match Found Here!", Toast.LENGTH_SHORT).show();
+
                     }
-                    audioFingerPrintingResultModel.setMusicList(musicList);
 
                 }else{
                     //Failure
                     audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
                     audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
                     audioFingerPrintingResultModel.setMusicList(null);
+                    Toast.makeText(context, "An Error Occured! Try Again!!", Toast.LENGTH_SHORT).show();
                 }
             }
         } catch (JSONException e) {
@@ -533,11 +548,68 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     }
 
-    private void resetListenSong() {
+    private void fingerprintingRecordsFound(AudioFingerPrintingResultModel resultModel) {
+        albumSearchLayout.removeAllViews();
+        View view = LayoutInflater.from(context).inflate(R.layout.fingerprint_results,null);
+        ImageView close = (ImageView) view.findViewById(R.id.closeRessults);
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                resetAlbumSearchLayout(true);
+
+            }
+        });
+        ViewPager viewPager = (ViewPager) view.findViewById(R.id.fingerprintResultsPager);
+        FingerprintResultsAdapter fingerprintResultsAdapter = new FingerprintResultsAdapter(context, resultModel, new FingerprintResultsAdapter.FingerprintResultsClickListener() {
+            @Override
+            public void onPagerClick(View view, int pos) {
+                //Todo: Handle Click Events Here...
+            }
+        });
+        viewPager.setAdapter(fingerprintResultsAdapter);
+        if(view.getParent()!=null){
+            ((ViewGroup)view.getParent()).removeView(view);
+        }
+        LinearLayout.LayoutParams albumParams = (LinearLayout.LayoutParams) albumSearchLayout.getLayoutParams();
+        albumParams.height = 0;
+        albumParams.weight = 3.5f;
+        albumSearchLayout.setLayoutParams(albumParams);
+        LinearLayout.LayoutParams fragmentLayoutLayoutParams = (LinearLayout.LayoutParams) fragmentLayout.getLayoutParams();
+        fragmentLayoutLayoutParams.height = 0;
+        fragmentLayoutLayoutParams.weight = 3.5f;
+        fragmentLayout.setLayoutParams(fragmentLayoutLayoutParams);
+        albumSearchLayout.addView(view,0);
+        mainDashboardLayout.postInvalidate();
+
+    }
+
+    private void resetAlbumSearchLayout(boolean wantToResetLayout) {
+        LinearLayout.LayoutParams albumParams = (LinearLayout.LayoutParams) albumSearchLayout.getLayoutParams();
+        albumParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        if(!wantToResetLayout) {
+            albumParams.height = 0;
+            albumParams.weight = 3.0f;
+        }else{
+            albumParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        }
+        albumSearchLayout.setLayoutParams(albumParams);
+        LinearLayout.LayoutParams fragmentLayoutLayoutParams = (LinearLayout.LayoutParams) fragmentLayout.getLayoutParams();
+        if(!wantToResetLayout) {
+            fragmentLayoutLayoutParams.height = 0;
+            fragmentLayoutLayoutParams.weight = 4.0f;
+        }else{
+            fragmentLayoutLayoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        }
+        fragmentLayout.setLayoutParams(fragmentLayoutLayoutParams);
+        albumSearchLayout.removeAllViews();
+    }
+
+    private void resetListenSongVisualizationLayout() {
         if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listenting_song).getConstantState()) {
             if(mediaPlayer!=null){
                 mediaPlayer.setVolume(1f,1f);
             }
+            albumSearchLayout.removeAllViews();
             stopFingerprinting();
             cancel();
             listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
@@ -581,9 +653,8 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             this.mClient.stopRecordToRecognize();
         }
         mProcessing = false;
-
         stopTime = System.currentTimeMillis();
-        audioVisualize.changeVisualization(false,0f);
+//        audioVisualize.changeVisualization(false,0f);
     }
     private void cancel() {
         if (mProcessing && this.mClient != null) {
