@@ -44,7 +44,11 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.CustomHolder
     @Override
     public void onBindViewHolder(CustomHolder holder, int position) {
         Bitmap bitmapFactory = BitmapFactory.decodeFile(albumModel.get(position).getAlbumCover());
-        holder.albumImage.setImageBitmap(bitmapFactory);
+        if(bitmapFactory!=null && bitmapFactory.getRowBytes()>0) {
+            holder.albumImage.setImageBitmap(bitmapFactory);
+        }else{
+            holder.albumImage.setImageDrawable(context.getResources().getDrawable(R.drawable.album_placeholder));
+        }
         holder.albumTitle.setText(albumModel.get(position).getAlbumTitle());
         holder.artistTitle.setText(albumModel.get(position).getArtistTitle());
 

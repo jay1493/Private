@@ -80,7 +80,7 @@ public class MainChildAlbumFragment extends Fragment implements LoaderManager.Lo
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(layout,null);
         recyclerView = (RecyclerView)view.findViewById(R.id.recyclerView_musicLibrary);
-        recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),2));
+        recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),3));
         musicAdapter = new MusicAdapter(getActivity(), albumModelList, new ItemClickListener() {
             @Override
             public void itemClick(View view, int position) {

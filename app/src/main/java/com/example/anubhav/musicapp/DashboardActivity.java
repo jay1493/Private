@@ -539,7 +539,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                     audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
                     audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
                     audioFingerPrintingResultModel.setMusicList(null);
-                    Toast.makeText(context, "An Error Occured! Try Again!!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "An Error Occurred! Try Again!!", Toast.LENGTH_SHORT).show();
                 }
             }
         } catch (JSONException e) {

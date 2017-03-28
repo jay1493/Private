@@ -85,7 +85,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout_frag_music,null);
         recyclerView = (RecyclerView)view.findViewById(R.id.recyclerView_musicLibrary);
-        recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),2));
+        recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),3));
         musicAdapter = new MusicAdapter(getActivity(), albumModelList, new ItemClickListener() {
             @Override
             public void itemClick(View view, int position) {
