@@ -740,7 +740,7 @@ public class FragMusicSearch extends Fragment {
                 if(response == HttpURLConnection.HTTP_OK){
                     int fileLength = urlConnection.getContentLength();
                     InputStream inputStream = urlConnection.getInputStream();
-                    File fileDir = new File("/sdcard/MyMusicApp");
+                    File fileDir = new File(Constants.MUSIC_SAVE_PATH);
                     if(!fileDir.exists()){
                         fileDir.mkdirs();
                     }

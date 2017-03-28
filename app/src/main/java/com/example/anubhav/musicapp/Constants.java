@@ -22,4 +22,6 @@ public class Constants {
     public static final String ACR_HOST = "ap-southeast-1.api.acrcloud.com";
     public static final String ACR_ACCESS_KEY = "ceb228df9f6fba45a276d8e617a70252";
     public static final String ACR_SECRET_KEY = "THcsve3gGr3drEkN89biOk9hISkttKA7RKdqbZhM";
+    public static final String MUSIC_SAVE_PATH = "/sdcard/MyMusicApp";
+    public static final String LOCAL_FINGERPRINT_PATH = "/sdcard/MyMusicApp/Db";
 }

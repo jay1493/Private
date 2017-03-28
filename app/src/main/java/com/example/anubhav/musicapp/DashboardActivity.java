@@ -139,7 +139,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private void setUpAudioFingerPrinting() {
         audioVisualize = new AudioVisualize(this,mainLayout,mainDashboardLayout);
         audioVisualize.startVisualize();
-        path = "/sdcard/MyApp";
+        path = Constants.LOCAL_FINGERPRINT_PATH;
         File file = new File(path);
         if(!file.exists()){
             file.mkdirs();
@@ -392,7 +392,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     private void permissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission_group.LOCATION)!=PackageManager.PERMISSION_GRANTED){
+            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
                 requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission_group.LOCATION}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
             } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission_group.LOCATION)!= PackageManager.PERMISSION_GRANTED) {
                 if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -405,8 +405,8 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, Manifest_permission_RECORD_AUDIO);
                 }
-                if(context.checkSelfPermission(Manifest.permission_group.LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission_group.LOCATION}, Manifest_permission_LOCATION);
+                if(context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, Manifest_permission_LOCATION);
                 }
             }else{
                 if(activityCreatedForFirstTime) {
@@ -473,7 +473,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     @Override
     public void onResult(String s) {
-        listenSong.performClick();
+        resetListenSong();
         audioFingerPrintingResultModel = new AudioFingerPrintingResultModel();
         List<AudioFingerPrintingResultMusicModel> musicList = new ArrayList<>();
         List<AudioFingerprintResultsGenreModel> genreList = new ArrayList<>();
@@ -530,6 +530,19 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+    }
+
+    private void resetListenSong() {
+        if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listenting_song).getConstantState()) {
+            if(mediaPlayer!=null){
+                mediaPlayer.setVolume(1f,1f);
+            }
+            stopFingerprinting();
+            cancel();
+            listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
+        }
+
 
     }
 
