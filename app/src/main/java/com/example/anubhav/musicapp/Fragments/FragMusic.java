@@ -21,7 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.anubhav.musicapp.Adapters.MusicAdapter;
+import com.example.anubhav.musicapp.Adapters.AlbumsListAdapter;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.R;
@@ -37,7 +37,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
     private RecyclerView recyclerView;
     private ProgressDialog progressDialog;
     private List<AlbumModel> albumModelList;
-    private MusicAdapter musicAdapter;
+    private AlbumsListAdapter albumsListAdapter;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1991;
 
     @Override
@@ -86,13 +86,13 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
         View view = inflater.inflate(R.layout.layout_frag_music,null);
         recyclerView = (RecyclerView)view.findViewById(R.id.recyclerView_musicLibrary);
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),3));
-        musicAdapter = new MusicAdapter(getActivity(), albumModelList, new ItemClickListener() {
+        albumsListAdapter = new AlbumsListAdapter(getActivity(), albumModelList, new ItemClickListener() {
             @Override
             public void itemClick(View view, int position) {
 
             }
         });
-        recyclerView.setAdapter(musicAdapter);
+        recyclerView.setAdapter(albumsListAdapter);
 
 
        /* if(savedInstanceState!=null){
@@ -127,7 +127,7 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
             case 0:
                 /**
                  * We will be running a query for albums, and when user clicks an album, we will run another query
-                 * for Audio.Media(Songs Query) WHERE ALBUM_KEY = _ID of clicked album.
+                 * for Audio.Media(Query) WHERE ALBUM_KEY = _ID of clicked album.
                  */
                 return new CursorLoader(getActivity(),MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,null,null,null,null);
         }
@@ -154,13 +154,13 @@ public class FragMusic extends Fragment implements LoaderManager.LoaderCallbacks
 
                 albumModelList.add(albumModel);
             }while(data.moveToNext());
-         musicAdapter.notifyDataSetChanged();
+         albumsListAdapter.notifyDataSetChanged();
         }
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         albumModelList = null;
-        musicAdapter.notifyDataSetChanged();
+        albumsListAdapter.notifyDataSetChanged();
     }
 }

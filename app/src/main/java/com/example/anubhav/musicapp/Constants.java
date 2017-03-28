@@ -24,4 +24,5 @@ public class Constants {
     public static final String ACR_SECRET_KEY = "THcsve3gGr3drEkN89biOk9hISkttKA7RKdqbZhM";
     public static final String MUSIC_SAVE_PATH = "/sdcard/MyMusicApp";
     public static final String LOCAL_FINGERPRINT_PATH = "/sdcard/MyMusicApp/Db";
+    public static final String SEND_MUSIC_AS_EXTRA = "SEND_MUSIC_AS_EXTRA";
 }

@@ -12,7 +12,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.anubhav.musicapp.Adapters.MainFragmentsAdapter;
+import com.example.anubhav.musicapp.Constants;
+import com.example.anubhav.musicapp.Model.AlbumModel;
+import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.R;
+
+import java.util.ArrayList;
 
 /**
  * Created by anubhav on 23/3/17.
@@ -24,6 +29,7 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
     private ViewPager viewPager;
     private Context activityContext;
     private MainFragmentsAdapter mainFragmentsAdapter;
+    private static MusicModel musicModel;
 
     @Override
     public void onAttach(Context context) {
@@ -32,6 +38,11 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
     }
 
     public static MainSongsFragment getInstance(Bundle bundle){
+        if(bundle!=null && bundle.getSerializable(Constants.SEND_MUSIC_AS_EXTRA)!=null){
+            musicModel = (MusicModel) bundle.getSerializable(Constants.SEND_MUSIC_AS_EXTRA);
+        }else{
+            musicModel = null;
+        }
 
         if(fragContext==null){
             fragContext = new MainSongsFragment();
@@ -51,7 +62,7 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
         View view = inflater.inflate(R.layout.layout_main_fragment_songs,null);
         viewPager = (ViewPager) view.findViewById(R.id.viewPagerSongsFragment);
         PagerTabStrip mPagerTabStrip = (PagerTabStrip) view.findViewById(R.id.pagerTabSongsFragment);
-        mPagerTabStrip.setTabIndicatorColor(activityContext.getResources().getColor(R.color.tab_indicator));
+        mPagerTabStrip.setTabIndicatorColor(activityContext.getResources().getColor(R.color.off_white));
         for (int i = 0; i < mPagerTabStrip.getChildCount(); ++i) {
             View nextChild = mPagerTabStrip.getChildAt(i);
             if (nextChild instanceof TextView) {
@@ -59,7 +70,7 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
                 textViewToConvert.setTextColor(activityContext.getResources().getColor(R.color.off_white));
             }
         }
-        mainFragmentsAdapter = new MainFragmentsAdapter(getChildFragmentManager(),2,getActivity());
+        mainFragmentsAdapter = new MainFragmentsAdapter(getChildFragmentManager(),2,getActivity(),musicModel);
         viewPager.setAdapter(mainFragmentsAdapter);
         return view;
     }

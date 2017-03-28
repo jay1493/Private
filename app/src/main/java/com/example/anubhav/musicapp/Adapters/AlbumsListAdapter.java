@@ -3,8 +3,6 @@ package com.example.anubhav.musicapp.Adapters;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.support.v4.graphics.BitmapCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,8 +10,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.R;
@@ -24,12 +20,12 @@ import java.util.List;
  * Created by anubhav on 1/3/17.
  */
 
-public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.CustomHolder> {
+public class AlbumsListAdapter extends RecyclerView.Adapter<AlbumsListAdapter.CustomHolder> {
     private Context context;
     private List<AlbumModel> albumModel;
     private ItemClickListener itemClickListener;
 
-    public MusicAdapter(Context context, List<AlbumModel> albumModel, ItemClickListener itemClickListener) {
+    public AlbumsListAdapter(Context context, List<AlbumModel> albumModel, ItemClickListener itemClickListener) {
         this.context = context;
         this.albumModel = albumModel;
         this.itemClickListener = itemClickListener;

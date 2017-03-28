@@ -1,17 +1,23 @@
 package com.example.anubhav.musicapp.Model;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by anubhav on 28/2/17.
  */
 
-public class AlbumModel {
+public class AlbumModel implements Serializable {
     private String albumId;
     private String albumTitle;
     private String albumCover;
     private String artistTitle;
-    private List<Songs> songs;
+    private ArrayList<SongsModel> songs;
+    private String noOfSongs;
+    public AlbumModel() {
+        songs = new ArrayList<>();
+    }
 
     public String getAlbumId() {
         return albumId;
@@ -45,11 +51,19 @@ public class AlbumModel {
         this.artistTitle = artistTitle;
     }
 
-    public List<Songs> getSongs() {
+    public List<SongsModel> getSongs() {
         return songs;
     }
 
-    public void setSongs(List<Songs> songs) {
-        this.songs = songs;
+    public String getNoOfSongs() {
+        return noOfSongs;
+    }
+
+    public void setNoOfSongs(String noOfSongs) {
+        this.noOfSongs = noOfSongs;
+    }
+
+    public void putSongs(SongsModel songsModel){
+        songs.add(songsModel);
     }
 }

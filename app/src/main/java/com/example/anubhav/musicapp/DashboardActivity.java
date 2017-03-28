@@ -42,10 +42,12 @@ import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Adapters.FingerprintResultsAdapter;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
+import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
+import com.example.anubhav.musicapp.Model.MusicModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -111,6 +113,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
 
     private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
     private LinearLayout fragmentLayout,albumSearchLayout;
+    private MusicModel musicModel;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -132,6 +135,11 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
         etSearchSong.setOnEditorActionListener(this);
         listenSong.setOnClickListener(this);
         setUpAudioFingerPrinting();
+        if(getIntent()!=null && getIntent().getExtras()!=null){
+            musicModel = (MusicModel) getIntent().getSerializableExtra(Constants.SEND_MUSIC_AS_EXTRA);
+        }else{
+            musicModel = null;
+        }
 
     }
 
@@ -162,7 +170,12 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     }
 
     private void setUpInitialHomeFragment() {
-        mainSongFragment = MainSongsFragment.getInstance(null);
+        Bundle bundle = null;
+        if(musicModel!=null){
+            bundle = new Bundle();
+            bundle.putSerializable(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
+        }
+        mainSongFragment = MainSongsFragment.getInstance(bundle);
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.add(R.id.fragmentView, mainSongFragment,MUSICFRAG);
