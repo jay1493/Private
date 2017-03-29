@@ -17,4 +17,5 @@
     <string name="main_song_fragment_layout">main_song_fragment_layout</string>
     <string name="main_song_fragment_position">main_song_fragment_position</string>
     <string name="Success">Success</string>
+    <string name="Updating_List_For_You_Hold_On">Updating list for you... Hold On!!</string>
 </resources>

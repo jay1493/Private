@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
@@ -31,9 +32,11 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.Model.SongsModel;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +51,7 @@ import java.util.TimerTask;
  * Created by anubhav on 16/2/17.
  */
 
-public class StartingActivity extends AppCompatActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
+public class StartingActivity extends BaseActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
     private static final int READ_MUSIC_REQ_CODE = 0123;
     private TextView logoName;
     private ImageView mainLoader,mainImage;
@@ -65,6 +68,7 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
     private ArrayList<SongsModel> songsModelArrayList;
     private HashMap<String,AlbumModel> albumModelHashMap;
     private MusicModel musicModel;
+    private SharedPreferences saveMusicModelSharedPrefs;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -100,11 +104,33 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
         logoName.setTypeface(typeface,Typeface.BOLD_ITALIC);
         GlideDrawableImageViewTarget glideDrawableImageViewTarget = new GlideDrawableImageViewTarget(mainLoader);
         Glide.with(this).load(R.raw.infinity1).into(glideDrawableImageViewTarget);
-        getSupportLoaderManager().initLoader(1,null,this);
+
+    }
+
+    private void isLoaderNeedsToLoad() {
+        if(getMusicModel()==null) {
+            getSupportLoaderManager().initLoader(1, null, this);
+        }else{
+            //But check for a change
+            setObserverOnActivity(new ObserverListener() {
+                @Override
+                public void isProcessCompleted(boolean isComplete) {
+                       if(isComplete){
+                           //Change
+                           getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
+                       }else{
+                           //No change is there
+                           musicModel = getMusicModel();
+                           mainImage.setOnClickListener(StartingActivity.this);
+                       }
+                }
+            },context);
+        }
     }
 
 
     private void init() {
+        saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_PRIVATE);
         albumModelHashMap = new HashMap<>();
         songsModelArrayList = new ArrayList<>();
         albumModelArrayList = new ArrayList<>();
@@ -131,10 +157,6 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
     protected void onResume() {
         super.onResume();
         running = true;
-        /** TODO:
-         * Observe a content observer in onResume(), and save the generated Album/Songs model in SharedPrefs
-         * So, if content is changed then only load the Loader else, just load the MODEL from sharedPrefs.
-         */
 
     }
 
@@ -142,7 +164,11 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
                 requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},READ_MUSIC_REQ_CODE);
+            }else{
+                isLoaderNeedsToLoad();
             }
+        }else {
+            isLoaderNeedsToLoad();
         }
     }
 
@@ -152,7 +178,7 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
         switch (requestCode){
             case READ_MUSIC_REQ_CODE:
                 if(grantResults!=null && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-
+                    isLoaderNeedsToLoad();
                 }else{
                     permissions();
                 }
@@ -201,7 +227,7 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
                               songsModel.setSongTitle(data.getString(songTitle));
                               songsModel.setTrackNoOfSongInAlbum(String.valueOf(data.getInt(songTrack)));
                               songsModel.setSongArtist(data.getString(songArtist));
-                              AlbumModel albumModel = albumModelHashMap.get(songsModel.getSongAlbumId());
+                              AlbumModel albumModel = (AlbumModel) albumModelHashMap.get(songsModel.getSongAlbumId());
                               if(albumModel!=null){
                                   songsModel.setSongAlbumCover(albumModel.getAlbumCover());
                                   albumModel.putSongs(songsModel);
@@ -245,13 +271,19 @@ public class StartingActivity extends AppCompatActivity implements View.OnClickL
               musicModel = new MusicModel();
               musicModel.setAllAlbums(albumModelArrayList);
               musicModel.setAllSongs(songsModelArrayList);
+              Gson gson = new Gson();
+              String musicJson = gson.toJson(musicModel);
+              SharedPreferences.Editor editorPrefs = saveMusicModelSharedPrefs.edit();
+              editorPrefs.putString(Constants.SHARED_PREFS_SAVED_MODEL,musicJson);
+              editorPrefs.apply();
               mainImage.setOnClickListener(StartingActivity.this);
           }
     }
 
     @Override
     public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
-       albumModelArrayList = null;
+        albumModelArrayList = new ArrayList<>();
+        songsModelArrayList = new ArrayList<>();
     }
 
     @Override

@@ -16,7 +16,8 @@
             android:layout_weight="2"
             android:layout_height="wrap_content"
             android:padding="@dimen/d10"
-            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:scaleType="centerInside"
             app:srcCompat ="@drawable/album_placeholder"/>
         <LinearLayout
             android:layout_width="0dp"

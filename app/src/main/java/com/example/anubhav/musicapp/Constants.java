@@ -25,4 +25,6 @@ public class Constants {
     public static final String MUSIC_SAVE_PATH = "/sdcard/MyMusicApp";
     public static final String LOCAL_FINGERPRINT_PATH = "/sdcard/MyMusicApp/Db";
     public static final String SEND_MUSIC_AS_EXTRA = "SEND_MUSIC_AS_EXTRA";
+    public static final String SHARED_PREFS_SAVED_MODEL = "SHARED_PREFS_SAVED_MODEL";
+    public static final String SHARED_PREFS_NAME = "SHARED_PREFS_NAME";
 }

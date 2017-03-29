@@ -10,6 +10,8 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -42,12 +44,14 @@ import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Adapters.FingerprintResultsAdapter;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
+import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.Observers.MySongsObserver;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,7 +66,7 @@ import java.util.List;
  * Created by anubhav on 19/2/17.
  */
 
-public class DashboardActivity extends AppCompatActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener {
+public class DashboardActivity extends BaseActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener {
 
     public static final String MUSICFRAGSERACH = "MUSICFRAGSERACH";
     public static final String MUSICFRAG = "MUSICFRAG";
@@ -114,6 +118,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
     private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
     private LinearLayout fragmentLayout,albumSearchLayout;
     private MusicModel musicModel;
+    private MySongsObserver mySongsObserver;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -342,6 +347,24 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             animationDrawable.start();
         }
         permissions();
+
+    }
+
+    private void setUpContentObserver() {
+        setObserverOnActivity(new ObserverListener() {
+            @Override
+            public void isProcessCompleted(boolean isComplete) {
+                if(isComplete){
+                    //Change is there
+                    //update music model field...
+                    callLoaders(DashboardActivity.this);
+
+                }else {
+                    //No change
+                    //Do nothing, as we have musicModel from Intent....
+                }
+            }
+        },context);
     }
 
     @Override
@@ -426,11 +449,14 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
                 }
             }
             else{
+                setUpContentObserver();
                 if(activityCreatedForFirstTime) {
                     setUpInitialHomeFragment();
                 }
             }
             return;
+        }else{
+            setUpContentObserver();
         }
         if(activityCreatedForFirstTime) {
             setUpInitialHomeFragment();
@@ -446,6 +472,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
+                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -454,6 +481,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             case Manifest_permission_READ_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
+                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -462,6 +490,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             case Manifest_permission_WRITE_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
+                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -470,6 +499,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             case Manifest_permission_RECORD_AUDIO:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
+                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -478,6 +508,7 @@ public class DashboardActivity extends AppCompatActivity implements SurfaceHolde
             case Manifest_permission_LOCATION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
+                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();

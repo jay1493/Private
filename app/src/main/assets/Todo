@@ -1,22 +1,23 @@
 //Todo: Tasks
-//TOdo: Complete 3 & 4 points till tomorrow(24th).
 ===============================================================
              /**
                 PRIORITY TASKS IN ORDER
              */
 ================================================================
 
-4.)Prepare Songs section (Songs should be visible)
-3.) Modifying Layouts:
-     a.)
+1.)Register ContentObserver on Dashboard
+2.)Prepare a music player
+3.)Music should be kept on playing in background if not stopped.
+4.)Fix Keyboard Issue of Search Song EditText
 
-5.)Fix Keyboard Issue of Search Song EditText
 ==========================================================================
            /**
               SECONDARY TASKS
             */
 ===========================================================================
 
+5.) Modifying Layouts:
+     a.) Download Links(Have a check)
 
 0.) /*
     * NOTE: Firstly save values obtained from cursor in SharedPrefs (List of models could be stored here)
@@ -24,10 +25,6 @@
     * time to load...Everytime...NOT NOTICED AGAIN....if happened again, then SOLVE...
     */
     -- It looks fine till now
-
-
-2.) Looking into the Content Observer in FRAGMUSIC to see if the downloaded music gets fetched here or not.
-    --(It looks like it does)
 
 7.)Change GraceNote Logo and Decrease Image Sizes, Remove any Illegal Content.
 
