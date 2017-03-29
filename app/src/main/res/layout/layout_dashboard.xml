@@ -77,29 +77,42 @@
             android:layout_gravity="center"
             android:src="@drawable/dashinfinity" />
     </FrameLayout>
-    <LinearLayout
-        android:id="@+id/mainLayout"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="7"
-        android:padding="20dp"
-        android:background="#000000"
-        android:orientation="vertical">
+        android:layout_weight="7">
+
         <LinearLayout
-            android:id="@+id/albumSearchView"
-            android:orientation="vertical"
+            android:id="@+id/mainLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent"
+            android:padding="20dp"
+            android:background="#000000"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/albumSearchView"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/fragmentView"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+            </LinearLayout>
         </LinearLayout>
+
         <LinearLayout
-            android:id="@+id/fragmentView"
-            android:orientation="vertical"
+            android:id="@+id/on_dashboard_music_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical">
+
 
         </LinearLayout>
-
-
-    </LinearLayout>
+    </FrameLayout>
 
 </LinearLayout>

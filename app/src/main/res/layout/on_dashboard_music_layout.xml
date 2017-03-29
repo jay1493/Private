@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <android.support.v7.widget.CardView
+        android:id="@+id/onScreenMusicControls"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:cardBackgroundColor="@color/background_drawable_1"
+        android:elevation="@dimen/d10">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:weightSum="10"
+            android:orientation="horizontal">
+            <ImageView
+                android:id="@+id/albumImage_In_OnScreen_Layout"
+                android:layout_width="0dp"
+                android:layout_weight="2"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="centerInside"
+                android:padding="@dimen/d10"
+                app:srcCompat ="@drawable/album_placeholder"/>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="7"
+                android:padding="@dimen/d10"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/songName_In_onScreen_Layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="2"
+                    android:textColor="@color/off_white"
+                    android:text=""/>
+                <TextView
+                    android:id="@+id/song_ArtistName_In_onScreen_Layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="@dimen/d10"
+                    android:singleLine="true"
+                    android:textColor="@color/off_white"
+                    android:text=""/>
+            </LinearLayout>
+            <ImageView
+                android:id="@+id/pause_play_button_in_onScreen_layout"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                app:srcCompat = "@drawable/pause_playback"
+                android:layout_gravity="center_vertical"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+</LinearLayout>

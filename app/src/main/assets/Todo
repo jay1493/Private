@@ -5,16 +5,17 @@
              */
 ================================================================
 
-1.)Register ContentObserver on Dashboard
-2.)Prepare a music player
-3.)Music should be kept on playing in background if not stopped.
-4.)Fix Keyboard Issue of Search Song EditText
+1.)Prepare a music player
+2.)Music should be kept on playing in background if not stopped.
+3.)Fix Keyboard Issue of Search Song EditText
 
 ==========================================================================
            /**
               SECONDARY TASKS
             */
 ===========================================================================
+
+4.)Issue connectivity check functions on all classes...
 
 5.) Modifying Layouts:
      a.) Download Links(Have a check)
