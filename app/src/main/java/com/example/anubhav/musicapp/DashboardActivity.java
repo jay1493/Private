@@ -90,31 +90,32 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private final int Manifest_permission_WRITE_EXTERNAL_STORAGE = 1993;
     private final int Manifest_permission_RECORD_AUDIO = 1994;
     private final int Manifest_permission_LOCATION = 1995;
-//    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
+    private final int Manifest_permission_WAKE_LOCK =1996;
+    //    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private static final String 		appString				= Constants.APP_NAME;
     private boolean activityCreatedForFirstTime = true;
-    private AssetFileDescriptor videoLoadingFromAssets;
 
+    private AssetFileDescriptor videoLoadingFromAssets;
     /**
      *  Params of Audio FingerPrint
      */
     private ACRCloudClient mClient;
+
     private ACRCloudConfig mConfig;
 
     private TextView mVolume, mResult, tv_time;
-
     private boolean mProcessing = false;
+
     private boolean initState = false;
-
     private String path = "";
-    private AudioVisualize audioVisualize;
 
+    private AudioVisualize audioVisualize;
     private long startTime = 0;
     private long stopTime = 0;
+
     static{
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
-
     private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
     private LinearLayout fragmentLayout,albumSearchLayout;
     private MusicModel musicModel;
@@ -223,8 +224,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             mediaPlayer.setDataSource(videoLoadingFromAssets.getFileDescriptor(), videoLoadingFromAssets.getStartOffset(), videoLoadingFromAssets.getLength());
             mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.setLooping(true);
-            mediaPlayer.prepareAsync();
+            mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
@@ -232,7 +232,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     return false;
                 }
             });
-            mediaPlayer.setOnPreparedListener(this);
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    if(videoLoader!=null && videoLoader.getVisibility() == View.VISIBLE){
+                        videoLoader.setVisibility(View.GONE);
+                    }
+                }
+            });
+            mediaPlayer.setLooping(true);
+            mediaPlayer.prepareAsync();
 
         } catch (IOException e) {
             Log.e("", "surfaceCreated: "+e.toString() );
@@ -310,6 +319,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         if(mediaPlayer!=null){
             surfaceHolder.removeCallback(this);
             surfaceHolder = null;
+            mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer=null;
 
@@ -323,6 +333,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         if(mediaPlayer!=null){
             surfaceHolder.removeCallback(this);
             surfaceHolder = null;
+            mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer=null;
 
@@ -431,9 +442,18 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     private void permissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission_group.LOCATION}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
-            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+
+            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED) {
                 if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
                 }
@@ -447,6 +467,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 if(context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, Manifest_permission_LOCATION);
                 }
+                if(context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!=PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.WAKE_LOCK},Manifest_permission_WAKE_LOCK);
+                }
+                setUpInitialHomeFragment();
+                setUpContentObserver();
             }
             else{
                 setUpContentObserver();
@@ -470,7 +495,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
                     setUpContentObserver();
                 } else {
@@ -480,8 +505,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 break;
             case Manifest_permission_READ_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setUpInitialHomeFragment();
-                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -489,8 +512,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 break;
             case Manifest_permission_WRITE_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setUpInitialHomeFragment();
-                    setUpContentObserver();
+
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -498,8 +520,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 break;
             case Manifest_permission_RECORD_AUDIO:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setUpInitialHomeFragment();
-                    setUpContentObserver();
+
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -507,14 +528,20 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 break;
             case Manifest_permission_LOCATION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setUpInitialHomeFragment();
-                    setUpContentObserver();
+
                 } else {
                     // User refused to grant permission.
                     permissions();
                 }
                 break;
+            case Manifest_permission_WAKE_LOCK:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
         }
     }
 

@@ -2,6 +2,7 @@ package com.example.anubhav.musicapp.Fragments;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -16,6 +17,7 @@ import com.example.anubhav.musicapp.Constants;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.MusicPLayerComponents.MusicPLayer;
 import com.example.anubhav.musicapp.R;
 
 import java.util.ArrayList;
@@ -71,11 +73,19 @@ public class MainChildSongsFragment extends Fragment {
             songsListAdapter = new SongsListAdapter(getActivity(), musicModel.getAllSongs(), new ItemClickListener() {
                 @Override
                 public void itemClick(View view, int position) {
-
+                    Intent intent = new Intent(getActivity(), MusicPLayer.class);
+                    intent.putExtra(Constants.PLAY_MUSIC_SONGS_LIST_SONG,musicModel.getAllSongs().get(position));
+                    startActivityForResult(intent,Constants.REQUEST_CODE_FOR_INTENT_FOR_PLAYING_SONGS);
                 }
             });
             recyclerView.setAdapter(songsListAdapter);
         }
         return view;
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
     }
 }
