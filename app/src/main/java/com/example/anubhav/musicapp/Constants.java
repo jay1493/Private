@@ -1,5 +1,6 @@
 package com.example.anubhav.musicapp;
 
+
 /**
  * Created by anubhav on 19/3/17.
  */
@@ -27,6 +28,4 @@ public class Constants {
     public static final String SEND_MUSIC_AS_EXTRA = "SEND_MUSIC_AS_EXTRA";
     public static final String SHARED_PREFS_SAVED_MODEL = "SHARED_PREFS_SAVED_MODEL";
     public static final String SHARED_PREFS_NAME = "SHARED_PREFS_NAME";
-    public static final int REQUEST_CODE_FOR_INTENT_FOR_PLAYING_SONGS = 9991;
-    public static final String PLAY_MUSIC_SONGS_LIST_SONG = "PLAY_MUSIC_SONGS_LIST_SONG";
 }

@@ -22,18 +22,22 @@
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
                 android:scaleType="centerInside"
-                android:padding="@dimen/d10"
+                android:paddingLeft="@dimen/d10"
+                android:paddingRight="@dimen/d10"
                 app:srcCompat ="@drawable/album_placeholder"/>
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_weight="7"
-                android:padding="@dimen/d10"
+                android:layout_gravity="center_vertical"
+                android:paddingLeft="@dimen/d10"
+                android:paddingRight="@dimen/d10"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
                 <TextView
                     android:id="@+id/songName_In_onScreen_Layout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textSize="@dimen/d24sp"
                     android:maxLines="2"
                     android:textColor="@color/off_white"
                     android:text=""/>
@@ -50,7 +54,7 @@
                 android:id="@+id/pause_play_button_in_onScreen_layout"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                app:srcCompat = "@drawable/pause_playback"
+                app:srcCompat = "@drawable/play_playback"
                 android:layout_gravity="center_vertical"
                 android:layout_height="wrap_content" />
 

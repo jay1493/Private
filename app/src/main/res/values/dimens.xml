@@ -3,12 +3,15 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="d16sp">16sp</dimen>
+    <dimen name="d24sp">24sp</dimen>
     <dimen name="d24">24dp</dimen>
     <dimen name="d40">40dp</dimen>
     <dimen name="d50">50dp</dimen>
     <dimen name="d70">70dp</dimen>
     <dimen name="d10">10dp</dimen>
+    <dimen name="d90">90dp</dimen>
     <dimen name="d100">100dp</dimen>
+    <dimen name="d110">110dp</dimen>
     <dimen name="d150">150dp</dimen>
     <dimen name="d200">200dp</dimen>
 </resources>

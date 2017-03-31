@@ -1,24 +1,29 @@
 package com.example.anubhav.musicapp;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.MediaStore;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.Toolbar;
@@ -31,8 +36,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,15 +51,18 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Adapters.FingerprintResultsAdapter;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
+import com.example.anubhav.musicapp.Fragments.MainChildSongsFragment;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
 import com.example.anubhav.musicapp.Interfaces.ObserverListener;
-import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.Model.SongsModel;
+import com.example.anubhav.musicapp.MusicPLayerComponents.MusicService;
 import com.example.anubhav.musicapp.Observers.MySongsObserver;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -66,7 +77,7 @@ import java.util.List;
  * Created by anubhav on 19/2/17.
  */
 
-public class DashboardActivity extends BaseActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener {
+public class DashboardActivity extends BaseActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener,MainChildSongsFragment.SongClickListener, SlidingUpPanelLayout.PanelSlideListener {
 
     public static final String MUSICFRAGSERACH = "MUSICFRAGSERACH";
     public static final String MUSICFRAG = "MUSICFRAG";
@@ -84,7 +95,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private AnimationDrawable animationDrawable;
     private ImageView searchSong,listenSong;
     private Context context;
-    private LinearLayout mainDashboardLayout;
+    private FrameLayout mainDashboardLayout;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1992;
     private final int Manifest_permission_WRITE_EXTERNAL_STORAGE = 1993;
@@ -120,6 +131,62 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private LinearLayout fragmentLayout,albumSearchLayout;
     private MusicModel musicModel;
     private MySongsObserver mySongsObserver;
+    private SongsModel songModelReceivedFromMusicPLayer;
+
+    /**
+     *
+     * @MusicPlayer params
+     */
+    private TextView songName,songArtistName,currentTimer;
+    private ImageView playlist_Or_pauseButton,songAlbumImage,playPause;
+    private LinearLayout albumImageLayout,playlistLayout;
+    private SeekBar seekBar;
+    private MusicService musicService;
+    private Intent musicServiceIntent;
+    private boolean isServiceConnected;
+    private Runnable seekbarRunnable;
+    private Handler seekbarHandler;
+    private float initialDurationOfSongInSecs;
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicService.MusicServiceBinder musicServiceBinder = (MusicService.MusicServiceBinder)service;
+            musicService = musicServiceBinder.getServiceObjectFromBinder();
+            isServiceConnected = true;
+            /** Below two lines would be used to start a new song*/
+            musicService.setSongModel(songModelReceivedFromMusicPLayer);
+            musicService.playSong(DashboardActivity.this);
+            playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+            if(musicService!=null && seekBar!=null){
+                //Connected Service
+                seekbarRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if(musicService!=null && seekBar!=null){
+                            //680,1729,3726 etc... getMediaPlayerPos return secs in millis..
+                            seekBar.setProgress(musicService.getMediaPlayerPos()/1000);
+                        }
+                        if(seekbarHandler!=null) {
+                            seekbarHandler.postDelayed(this, 1000);
+                        }
+                    }
+                };
+                runOnUiThread(seekbarRunnable);
+            }
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isServiceConnected = false;
+        }
+    };
+    private java.text.DecimalFormat decimalFormat;
+    private float initialDurationOfSongInMins;
+    private boolean fromUser;
+    private int currentProgress;
+    private SlidingUpPanelLayout slidingLayout;
+    private LinearLayout dragLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -199,7 +266,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mainDashboardLayout = (LinearLayout)findViewById(R.id.mainDashboard);
+        mainDashboardLayout = (FrameLayout) findViewById(R.id.mainDashboard);
         searchSong = (ImageView)findViewById(R.id.searchSong);
         listenSong = (ImageView) findViewById(R.id.listenSong);
         toolbar = (Toolbar)findViewById(R.id.toolbar_dashboard);
@@ -208,13 +275,38 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         mainLayout = (LinearLayout)findViewById(R.id.mainLayout);
         fragmentLayout = (LinearLayout)findViewById(R.id.fragmentView);
         albumSearchLayout = (LinearLayout)findViewById(R.id.albumSearchView);
+        decimalFormat = new java.text.DecimalFormat("0.00");
+        slidingLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        slidingLayout.addPanelSlideListener(this);
+        slidingLayout.setTouchEnabled(true);
+        slidingLayout.setMotionEventSplittingEnabled(true);
+        slidingLayout.setEnabled(true);
+        slidingLayout.setDragView(R.id.dragView);
+        initExpandedView();
+
     }
 
-    @Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        if(surfaceHolder!=null) {
-            initializeMediaPlayer(surfaceHolder);
-        }
+    private void initExpandedView() {
+        //Todo: Handle all button click events
+        dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
+        songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        songName.setText("Not Playing");
+        songArtistName = (TextView) findViewById(R.id.song_ArtistName_In_onScreen_Layout);
+        songArtistName.setText("Unknown");
+        playlist_Or_pauseButton = (ImageView) findViewById(R.id.pause_play_button_in_onScreen_layout);
+        albumImageLayout = (LinearLayout) findViewById(R.id.playbackImage_musicLayout);
+        songAlbumImage = (ImageView) findViewById(R.id.songAlbumImage_musicLayout);
+        playlistLayout = (LinearLayout) findViewById(R.id.playlist_musicLayout);
+        seekBar = (SeekBar) findViewById(R.id.music_seekbar);
+        playPause = (ImageView) findViewById(R.id.playPause_song_musicLayout);
+        currentTimer = (TextView) findViewById(R.id.currentTimer);
+        seekbarHandler = new Handler();
+        decimalFormat = new java.text.DecimalFormat("0.00");
+        playPause.setOnClickListener(this);
+        seekBar.setEnabled(false);
+        playlist_Or_pauseButton.setOnClickListener(this);
+        playPause.setOnClickListener(this);
+
     }
 
     private void initializeMediaPlayer(SurfaceHolder surfaceHolder) {
@@ -225,6 +317,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.setOnPreparedListener(this);
+            mediaPlayer.setVolume(0f,0f);
             mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
@@ -246,6 +339,101 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         } catch (IOException e) {
             Log.e("", "surfaceCreated: "+e.toString() );
             e.printStackTrace();
+        }
+    }
+
+    public void inflateMusicLayout(SongsModel songsModel){
+        if(songsModel!=null){
+            songModelReceivedFromMusicPLayer = songsModel;
+            inflateExpandedView();
+            initialDurationOfSongInSecs = (Integer.parseInt(songModelReceivedFromMusicPLayer.getSongDuration()))/1000;
+            try {
+                initialDurationOfSongInMins = Float.parseFloat(decimalFormat.format(initialDurationOfSongInSecs/60));
+                currentTimer.setText(String.valueOf(decimalFormat.format(initialDurationOfSongInMins)));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if(seekBar!=null){
+                seekBar.setEnabled(true);
+                seekBar.setMax((int) initialDurationOfSongInSecs);
+                seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        if(fromUser){
+                            musicService.forwardSongBySeekbar(progress);
+                        }
+                        if(progress == seekBar.getMax()){
+                            //Full Song Played.,change pause image to play
+                            if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(DashboardActivity.this,R.drawable.pause_playback).getConstantState()){
+                                playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+                                currentTimer.setText("--:--");
+                            }
+                        }else{
+                            //Currently running
+                            if(musicService!=null){
+                                try {
+                                    float mediaProgress = musicService.getMediaPlayerPos();
+                                    float diffInMins = initialDurationOfSongInMins - Float.parseFloat(decimalFormat.format(mediaProgress/(60*1000)));
+                                    currentTimer.setText(String.valueOf(decimalFormat.format(diffInMins)));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onStartTrackingTouch(SeekBar seekBar) {
+                        seekbarHandler.removeCallbacks(seekbarRunnable);
+
+                    }
+
+                    @Override
+                    public void onStopTrackingTouch(SeekBar seekBar) {
+                        seekbarHandler.postDelayed(seekbarRunnable,1000);
+                        fromUser = true;
+                    }
+                });
+            }
+            if(!isServiceConnected){
+                //Service is UnBounded...
+                musicServiceIntent = new Intent(this,MusicService.class);
+                bindService(musicServiceIntent,serviceConnection,BIND_AUTO_CREATE);
+                startService(musicServiceIntent);
+            }else{
+                //Service is already connected...Just Change Song...
+                musicService.setSongModel(songModelReceivedFromMusicPLayer);
+                musicService.playSong(DashboardActivity.this);
+                //Todo: See about whether the playback button changes or not...
+
+            }
+        }
+    }
+
+    private void inflateExpandedView() {
+        setUpValuesFromSongModel();
+        if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()){
+            playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+        }
+    }
+
+    private void setUpValuesFromSongModel() {
+        songName.setText(songModelReceivedFromMusicPLayer.getSongTitle());
+        songName.requestFocus();
+        songArtistName.setText(songModelReceivedFromMusicPLayer.getSongArtist());
+        Bitmap albumCover = BitmapFactory.decodeFile(songModelReceivedFromMusicPLayer.getSongAlbumCover());
+        if(albumCover!=null && albumCover.getRowBytes() > 0){
+            songAlbumImage.setImageBitmap(albumCover);
+        }
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        if(surfaceHolder!=null) {
+            initializeMediaPlayer(surfaceHolder);
+            if (videoLoader.getVisibility() == View.GONE) {
+                videoLoader.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -271,6 +459,42 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onClick(View view) {
         switch (view.getId()){
+            case R.id.pause_play_button_in_onScreen_layout:
+                if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                    //Currently playing
+                    if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
+                        //In secs
+                        currentProgress = musicService.getMediaPlayerPos();
+                        musicService.pauseMediaPlayer();
+                        playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+                    }
+                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()){
+                    //Currently Paused
+                    if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
+                        //In secs
+                        musicService.resumePlayback();
+                        playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                    }
+                }
+                break;
+            case R.id.playPause_song_musicLayout:
+                if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                    //Currently playing
+                    if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
+                        //In secs
+                        currentProgress = musicService.getMediaPlayerPos();
+                        musicService.pauseMediaPlayer();
+                        playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+                    }
+                }else{
+                    //Currently Paused
+                    if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
+                        //In secs
+                        musicService.resumePlayback();
+                        playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                    }
+                }
+                break;
             case R.id.listenSong:
                 if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listen_song).getConstantState()){
                     if(mediaPlayer!=null){
@@ -281,7 +505,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
                 }else{
                     if(mediaPlayer!=null){
-                        mediaPlayer.setVolume(1f,1f);
+                        mediaPlayer.setVolume(0f,0f);
                     }
                     resetAlbumSearchLayout(true);
                     stopFingerprinting();
@@ -348,9 +572,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     protected void onResume() {
         super.onResume();
         videoView = (SurfaceView) findViewById(R.id.video);
-        if (videoLoader.getVisibility() == View.GONE) {
-            videoLoader.setVisibility(View.VISIBLE);
-        }
         surfaceHolder = videoView.getHolder();
         surfaceHolder.addCallback(this);
 
@@ -394,6 +615,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                        break;
                }
            }
+            if (slidingLayout != null &&
+                    (slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED || slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.ANCHORED)) {
+                slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+            }
         }else{
             super.onBackPressed();
         }
@@ -678,7 +903,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void resetListenSongVisualizationLayout() {
         if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listenting_song).getConstantState()) {
             if(mediaPlayer!=null){
-                mediaPlayer.setVolume(1f,1f);
+                mediaPlayer.setVolume(0f,0f);
             }
             albumSearchLayout.removeAllViews();
             stopFingerprinting();
@@ -702,6 +927,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             this.initState = false;
             this.mClient = null;
         }
+       /* if(Constants.getMusicServiceIntent()!=null){
+            stopService(Constants.getMusicServiceIntent());
+        }*/
+       stopService(musicServiceIntent);
+        musicService = null;
     }
 
     private void startFingerprinting(){
@@ -733,4 +963,33 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             this.mClient.cancel();
         }
     }
+
+
+    @Override
+    public void onSongClick(SongsModel song, boolean isExpanded) {
+        inflateMusicLayout(song);
+    }
+
+    @Override
+    public void onPanelSlide(View panel, float slideOffset) {
+    }
+
+    @Override
+    public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
+        if(previousState == SlidingUpPanelLayout.PanelState.EXPANDED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
+            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
+                Drawable expandedDrawable = playPause.getDrawable();
+                playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
+            }
+        }else if(previousState == SlidingUpPanelLayout.PanelState.COLLAPSED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
+            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()
+                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                    playPause.setImageDrawable(playlist_Or_pauseButton.getDrawable());
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+            }
+        }
+    }
+
+
+
 }

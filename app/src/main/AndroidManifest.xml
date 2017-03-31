@@ -48,8 +48,6 @@
               <category android:name="android.intent.category.LAUNCHER" />
           </intent-filter>-->
         </activity>
-        <activity android:name=".MusicPLayerComponents.MusicPLayer"
-            android:theme="@style/MainScreenTheme"/>
         <service android:name=".MusicPLayerComponents.MusicService" android:exported="false" android:stopWithTask="true"/>
     </application>
 

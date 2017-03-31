@@ -27,10 +27,10 @@ public class AudioVisualize {
     private FrameLayout.LayoutParams logoParams;
     private FrameLayout.LayoutParams mainImageParams;
     private LinearLayout parentLayout;
-    private LinearLayout rootLayout;
+    private FrameLayout rootLayout;
     private View view;
 
-    public AudioVisualize(Context context, LinearLayout parentLayout, LinearLayout rootLayout) {
+    public AudioVisualize(Context context, LinearLayout parentLayout, FrameLayout rootLayout) {
         this.context = context;
         this.parentLayout = parentLayout;
         this.rootLayout = rootLayout;

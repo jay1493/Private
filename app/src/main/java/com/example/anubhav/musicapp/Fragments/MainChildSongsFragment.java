@@ -14,10 +14,11 @@ import android.view.ViewGroup;
 
 import com.example.anubhav.musicapp.Adapters.SongsListAdapter;
 import com.example.anubhav.musicapp.Constants;
+import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
-import com.example.anubhav.musicapp.MusicPLayerComponents.MusicPLayer;
+import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.R;
 
 import java.util.ArrayList;
@@ -35,11 +36,13 @@ public class MainChildSongsFragment extends Fragment {
     private static int layout;
     private SongsListAdapter songsListAdapter;
     private static MusicModel musicModel;
+    private SongClickListener songClickListener;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         activityContext = context;
+        songClickListener = (SongClickListener)context;
     }
 
     public static MainChildSongsFragment getInstance(Bundle bundle){
@@ -73,9 +76,7 @@ public class MainChildSongsFragment extends Fragment {
             songsListAdapter = new SongsListAdapter(getActivity(), musicModel.getAllSongs(), new ItemClickListener() {
                 @Override
                 public void itemClick(View view, int position) {
-                    Intent intent = new Intent(getActivity(), MusicPLayer.class);
-                    intent.putExtra(Constants.PLAY_MUSIC_SONGS_LIST_SONG,musicModel.getAllSongs().get(position));
-                    startActivityForResult(intent,Constants.REQUEST_CODE_FOR_INTENT_FOR_PLAYING_SONGS);
+                    songClickListener.onSongClick(musicModel.getAllSongs().get(position),true);
                 }
             });
             recyclerView.setAdapter(songsListAdapter);
@@ -87,5 +88,8 @@ public class MainChildSongsFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+    }
+    public interface SongClickListener{
+        void onSongClick(SongsModel song,boolean isExpanded);
     }
 }
