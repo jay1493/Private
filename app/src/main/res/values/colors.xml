@@ -21,4 +21,5 @@
     <color name="black">#000000</color>
     <color name="bright_red">#FF0000</color>
     <color name="tab_indicator">#303030</color>
+    <color name="gray_with_alpha">#586e6b6b</color>
 </resources>

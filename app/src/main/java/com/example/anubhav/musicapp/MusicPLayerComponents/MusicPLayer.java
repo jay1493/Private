@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -29,7 +31,7 @@ import java.text.ParseException;
  * Created by anubhav on 30/3/17.
  */
 
-public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener {
+public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnClickListener {
     private SongsModel songModel;
     private TextView songName,songArtistName,currentTimer;
     private ImageView playlistButton,songAlbumImage,playPause;
@@ -62,10 +64,12 @@ public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarC
     private float initialDurationOfSongInMins;
     private Context context;
     private boolean fromUser;
+    private int currentProgress;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.music_play_main_layout);
         init();
         if(getIntent()!=null && getIntent().getExtras()!=null){
@@ -113,6 +117,7 @@ public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarC
         currentTimer = (TextView) findViewById(R.id.currentTimer);
         seekbarHandler = new Handler();
         decimalFormat = new java.text.DecimalFormat("0.00");
+        playPause.setOnClickListener(this);
 
     }
 
@@ -123,7 +128,7 @@ public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarC
             @Override
             public void run() {
                 if(musicService!=null && seekBar!=null){
-                    //680,1729,3726 etc...
+                    //680,1729,3726 etc... getMediaPlayerPos return secs in millis..
                     seekBar.setProgress(musicService.getMediaPlayerPos()/1000);
                 }
                 if(seekbarHandler!=null) {
@@ -184,5 +189,29 @@ public class MusicPLayer extends AppCompatActivity implements SeekBar.OnSeekBarC
     public void onStopTrackingTouch(SeekBar seekBar) {
         seekbarHandler.postDelayed(seekbarRunnable,1000);
         fromUser = true;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.playPause_song_musicLayout:
+                if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                    //Currently playing
+                    if(seekBar!=null && musicService!=null){
+                        //In secs
+                        currentProgress = musicService.getMediaPlayerPos();
+                        musicService.pauseMediaPlayer();
+                        playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+                    }
+                }else{
+                    //Currently Paused
+                    if(seekBar!=null && musicService!=null){
+                        //In secs
+                        musicService.resumePlayback();
+                        playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                    }
+                }
+                break;
+        }
     }
 }

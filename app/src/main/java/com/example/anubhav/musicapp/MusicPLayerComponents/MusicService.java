@@ -52,6 +52,19 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
 
     }
 
+    public void pauseMediaPlayer() {
+        if(musicPlayer!=null){
+            musicPlayer.pause();
+        }
+    }
+
+    public void resumePlayback() {
+        if(musicPlayer!=null){
+            musicPlayer.start();
+        }
+    }
+
+
     public class MusicServiceBinder extends Binder{
         MusicService getServiceObjectFromBinder(){
             return MusicService.this;
@@ -94,7 +107,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         }
     }
     public void forwardSongBySeekbar(int progress){
-         musicPlayer.seekTo(progress*1000);
+        musicPlayer.seekTo(progress*1000);
     }
 
     public int getMediaPlayerPos(){

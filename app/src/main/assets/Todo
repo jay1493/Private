@@ -5,7 +5,7 @@
              */
 ================================================================
 
-1.)Prepare a music player
+1.)Prepare a music player(improve layout, all buttons should be working, prepare a playlist(current))
 2.)Music should be kept on playing in background if not stopped.
 3.)Fix Keyboard Issue of Search Song EditText
 

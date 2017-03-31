@@ -3,7 +3,9 @@ package com.example.anubhav.musicapp;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
@@ -41,6 +43,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_PRIVATE);
         String musicJson = saveMusicModelSharedPrefs.getString(Constants.SHARED_PREFS_SAVED_MODEL,null);
         if(musicJson!=null){
