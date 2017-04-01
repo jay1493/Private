@@ -532,8 +532,13 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             }
                         }, true, null, this);
                         playlistRecyclerView.setAdapter(playlistAdapter);
-
+                        playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
                     }
+                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
+                    //Switch Layouts
+                    playlistLayout.setVisibility(View.GONE);
+                    songAlbumImage.setVisibility(View.VISIBLE);
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
                 break;
             case R.id.playPause_song_musicLayout:
@@ -1055,7 +1060,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
         if(previousState == SlidingUpPanelLayout.PanelState.EXPANDED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
-            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
+            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()
+                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
                 Drawable expandedDrawable = playPause.getDrawable();
                 playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
             }
@@ -1063,7 +1069,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
                     playPause.setImageDrawable(playlist_Or_pauseButton.getDrawable());
+                if(playlistLayout.getVisibility() == View.VISIBLE) {
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                }else{
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                }
             }
         }
     }
@@ -1073,11 +1083,18 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     public void addInPlaylist(SongsModel songsModel, int pos) {
         if(playlistModel!=null){
              playlistModel.putSong(songsModel);
-             copyPlaylistList.add(songsModel);
-            if(playlistAdapter!=null){
-                playlistAdapter.notifyDataSetChanged();
-            }
-            //Todo : add the functionality that, if we have no song in our playlist then adding a song means playing it...
+             if(!copyPlaylistList.contains(songsModel)) {
+                 copyPlaylistList.add(songsModel);
+             }
+             if(copyPlaylistList.size()>1){
+                 if(playlistAdapter!=null){
+                     playlistAdapter.notifyDataSetChanged();
+                 }
+             }
+             if(copyPlaylistList.size() == 1){
+                 currentPlayingSong = songsModel;
+                 inflateMusicLayout(songsModel);
+             }
         }
 
     }
@@ -1091,10 +1108,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 if(copyPlaylistList.size() == 0){
                     songAlbumImage.setVisibility(View.VISIBLE);
                     playlistLayout.setVisibility(View.GONE);
-                    //Todo Change the upcoming album icon from playlist icon also...
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
             }else{
-                //Todo Redo the inflatedExpandedView Layout...
+                //Todo Redo the inflatedExpandedView Layout...(NO NEED)
             }
             if(playlistAdapter!=null){
                 playlistAdapter.notifyDataSetChanged();

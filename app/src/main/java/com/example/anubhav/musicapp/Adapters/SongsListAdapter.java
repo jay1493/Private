@@ -58,7 +58,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         holder.songTitle.setText(songsModel.get(position).getSongTitle());
         holder.songArtistTitle.setText(songsModel.get(position).getSongArtist());
         if(showPlaylistLayout){
-            if(holder.songOptions.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
+            if(holder.songOptions.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.library_add).getConstantState()){
                 holder.songOptions.setImageDrawable(context.getResources().getDrawable(R.drawable.arrange_songs_in_playlist));
             }
             holder.songOptions.setOnClickListener(new View.OnClickListener() {
