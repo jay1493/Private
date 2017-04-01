@@ -28,4 +28,6 @@ public class Constants {
     public static final String SEND_MUSIC_AS_EXTRA = "SEND_MUSIC_AS_EXTRA";
     public static final String SHARED_PREFS_SAVED_MODEL = "SHARED_PREFS_SAVED_MODEL";
     public static final String SHARED_PREFS_NAME = "SHARED_PREFS_NAME";
+    public static final String PLAYLIST_SHARED_PREFS = "PLAYLIST_SHARED_PREFS";
+    public static final String PLAYLIST_FROM_SHARED_PREFS = "PLAYLIST_FROM_SHARED_PREFS";
 }

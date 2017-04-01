@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
@@ -26,6 +27,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.AppCompatDrawableManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -50,18 +53,22 @@ import com.acrcloud.rec.sdk.IACRCloudListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Adapters.FingerprintResultsAdapter;
+import com.example.anubhav.musicapp.Adapters.SongsListAdapter;
 import com.example.anubhav.musicapp.Fragments.FragMusicSearch;
 import com.example.anubhav.musicapp.Fragments.MainChildSongsFragment;
 import com.example.anubhav.musicapp.Fragments.MainSongsFragment;
+import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultModel;
 import com.example.anubhav.musicapp.Model.AudioFingerPrintingResultMusicModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsArtistModel;
 import com.example.anubhav.musicapp.Model.AudioFingerprintResultsGenreModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.Model.PlaylistModel;
 import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.MusicPLayerComponents.MusicService;
 import com.example.anubhav.musicapp.Observers.MySongsObserver;
+import com.google.gson.Gson;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
@@ -77,7 +84,7 @@ import java.util.List;
  * Created by anubhav on 19/2/17.
  */
 
-public class DashboardActivity extends BaseActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener,MainChildSongsFragment.SongClickListener, SlidingUpPanelLayout.PanelSlideListener {
+public class DashboardActivity extends BaseActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, View.OnClickListener, TextView.OnEditorActionListener, IACRCloudListener,MainChildSongsFragment.SongClickListener, SlidingUpPanelLayout.PanelSlideListener,MainChildSongsFragment.SongAddToPlaylistListener, SongsListAdapter.SongOptionsDeleteFromPlaylistListener {
 
     public static final String MUSICFRAGSERACH = "MUSICFRAGSERACH";
     public static final String MUSICFRAG = "MUSICFRAG";
@@ -137,9 +144,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
      *
      * @MusicPlayer params
      */
-    private TextView songName,songArtistName,currentTimer;
-    private ImageView playlist_Or_pauseButton,songAlbumImage,playPause;
-    private LinearLayout albumImageLayout,playlistLayout;
+    private TextView songName,songArtistName,currentTimer,selectedSongName, selectedSongArtistName;
+    private ImageView playlist_Or_pauseButton,songAlbumImage,playPause,selectedSongAlbumImage,selectedSongOptions;
+    private LinearLayout albumImageLayout;
+    private RelativeLayout playlistLayout;
     private SeekBar seekBar;
     private MusicService musicService;
     private Intent musicServiceIntent;
@@ -187,6 +195,13 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private int currentProgress;
     private SlidingUpPanelLayout slidingLayout;
     private LinearLayout dragLayout;
+    private SharedPreferences playlistSharedPrefs;
+    private PlaylistModel playlistModel;
+    private Gson gson;
+    private RecyclerView playlistRecyclerView;
+    private SongsListAdapter playlistAdapter;
+    private SongsModel currentPlayingSong;
+    private ArrayList<SongsModel> copyPlaylistList;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -208,12 +223,20 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         etSearchSong.setOnEditorActionListener(this);
         listenSong.setOnClickListener(this);
         setUpAudioFingerPrinting();
+        gson = new Gson();
         if(getIntent()!=null && getIntent().getExtras()!=null){
             musicModel = (MusicModel) getIntent().getSerializableExtra(Constants.SEND_MUSIC_AS_EXTRA);
         }else{
             musicModel = null;
         }
+        playlistSharedPrefs = getSharedPreferences(Constants.PLAYLIST_SHARED_PREFS,MODE_PRIVATE);
+        if(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null) == null){
+            //Noting in playlist nodel
+            playlistModel = new PlaylistModel();
+        }else{
+            playlistModel = gson.fromJson(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null),PlaylistModel.class);
 
+        }
     }
 
     private void setUpAudioFingerPrinting() {
@@ -283,20 +306,22 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         slidingLayout.setEnabled(true);
         slidingLayout.setDragView(R.id.dragView);
         initExpandedView();
-
+        copyPlaylistList = new ArrayList<>();
     }
 
     private void initExpandedView() {
         //Todo: Handle all button click events
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
+        playlistRecyclerView.setLayoutManager(new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false));
         songName.setText("Not Playing");
         songArtistName = (TextView) findViewById(R.id.song_ArtistName_In_onScreen_Layout);
         songArtistName.setText("Unknown");
         playlist_Or_pauseButton = (ImageView) findViewById(R.id.pause_play_button_in_onScreen_layout);
         albumImageLayout = (LinearLayout) findViewById(R.id.playbackImage_musicLayout);
         songAlbumImage = (ImageView) findViewById(R.id.songAlbumImage_musicLayout);
-        playlistLayout = (LinearLayout) findViewById(R.id.playlist_musicLayout);
+        playlistLayout = (RelativeLayout) findViewById(R.id.playlist_musicLayout);
         seekBar = (SeekBar) findViewById(R.id.music_seekbar);
         playPause = (ImageView) findViewById(R.id.playPause_song_musicLayout);
         currentTimer = (TextView) findViewById(R.id.currentTimer);
@@ -404,9 +429,15 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 //Service is already connected...Just Change Song...
                 musicService.setSongModel(songModelReceivedFromMusicPLayer);
                 musicService.playSong(DashboardActivity.this);
-                //Todo: See about whether the playback button changes or not...
+                if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()){
+                    playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                }
 
             }
+            if(playlistAdapter!=null){
+                playlistAdapter.notifyDataSetChanged();
+            }
+
         }
     }
 
@@ -474,6 +505,34 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         //In secs
                         musicService.resumePlayback();
                         playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                    }
+                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
+                    //Setup Playlist...
+                    if(playlistModel!=null && playlistModel.getSongsModelList().size() >1) {
+                        songAlbumImage.setVisibility(View.GONE);
+                        playlistLayout.setVisibility(View.VISIBLE);
+                        if(currentPlayingSong!=null) {
+//                            playlistModel.copyToDuplicateList(currentPlayingSong);
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }else{
+                            copyPlaylistList = playlistModel.getSongsModelList();
+                        }
+                        playlistAdapter = new SongsListAdapter(context, copyPlaylistList, new ItemClickListener() {
+                            @Override
+                            public void itemClick(View view, int position) {
+                                SongsModel tempCurrentModel = copyPlaylistList.get(position);
+                                if(currentPlayingSong!=null){
+                                     copyPlaylistList.add(currentPlayingSong);
+                                }
+                                currentPlayingSong = tempCurrentModel;
+                                inflateMusicLayout(currentPlayingSong);
+//                                playlistModel.removeCurrentSong(currentPlayingSong);
+                                copyPlaylistList.remove(currentPlayingSong);
+                                playlistAdapter.notifyDataSetChanged();
+                            }
+                        }, true, null, this);
+                        playlistRecyclerView.setAdapter(playlistAdapter);
+
                     }
                 }
                 break;
@@ -564,6 +623,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         }
         if(animationDrawable.isRunning()){
             animationDrawable.stop();
+        }
+        String playlist = gson.toJson(playlistModel);
+        if(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null) !=null &&
+                !playlist.equals(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null))) {
+            SharedPreferences.Editor playlistEditor = playlistSharedPrefs.edit();
+            playlistEditor.putString(Constants.PLAYLIST_FROM_SHARED_PREFS,playlist);
+            playlistEditor.apply();
+        }else if(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null) == null){
+            SharedPreferences.Editor playlistEditor = playlistSharedPrefs.edit();
+            playlistEditor.putString(Constants.PLAYLIST_FROM_SHARED_PREFS,playlist);
+            playlistEditor.apply();
         }
 
     }
@@ -921,17 +991,15 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         if (this.mClient != null) {
             this.mClient.release();
             this.initState = false;
             this.mClient = null;
         }
-       /* if(Constants.getMusicServiceIntent()!=null){
-            stopService(Constants.getMusicServiceIntent());
-        }*/
-       stopService(musicServiceIntent);
+        stopService(musicServiceIntent);
         musicService = null;
+        super.onDestroy();
+
     }
 
     private void startFingerprinting(){
@@ -968,6 +1036,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onSongClick(SongsModel song, boolean isExpanded) {
         inflateMusicLayout(song);
+        if(playlistModel!=null){
+            if(currentPlayingSong!=null) {
+                copyPlaylistList.add(currentPlayingSong);
+            }
+            currentPlayingSong = song;
+            if(playlistAdapter!=null){
+                playlistAdapter.notifyDataSetChanged();
+            }
+            playlistModel.putSong(song);
+        }
     }
 
     @Override
@@ -991,5 +1069,36 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     }
 
 
+    @Override
+    public void addInPlaylist(SongsModel songsModel, int pos) {
+        if(playlistModel!=null){
+             playlistModel.putSong(songsModel);
+             copyPlaylistList.add(songsModel);
+            if(playlistAdapter!=null){
+                playlistAdapter.notifyDataSetChanged();
+            }
+            //Todo : add the functionality that, if we have no song in our playlist then adding a song means playing it...
+        }
 
+    }
+
+    @Override
+    public void deleteFromPlaylist(SongsModel songsModel, int pos) {
+        if(playlistModel!=null){
+            playlistModel.removeSong(songsModel);
+            if(currentPlayingSong != songsModel){
+                copyPlaylistList.remove(songsModel);
+                if(copyPlaylistList.size() == 0){
+                    songAlbumImage.setVisibility(View.VISIBLE);
+                    playlistLayout.setVisibility(View.GONE);
+                    //Todo Change the upcoming album icon from playlist icon also...
+                }
+            }else{
+                //Todo Redo the inflatedExpandedView Layout...
+            }
+            if(playlistAdapter!=null){
+                playlistAdapter.notifyDataSetChanged();
+            }
+        }
+    }
 }

@@ -37,12 +37,14 @@ public class MainChildSongsFragment extends Fragment {
     private SongsListAdapter songsListAdapter;
     private static MusicModel musicModel;
     private SongClickListener songClickListener;
+    private SongAddToPlaylistListener songAddToPlaylistListener;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         activityContext = context;
         songClickListener = (SongClickListener)context;
+        songAddToPlaylistListener = (SongAddToPlaylistListener)context;
     }
 
     public static MainChildSongsFragment getInstance(Bundle bundle){
@@ -76,9 +78,14 @@ public class MainChildSongsFragment extends Fragment {
             songsListAdapter = new SongsListAdapter(getActivity(), musicModel.getAllSongs(), new ItemClickListener() {
                 @Override
                 public void itemClick(View view, int position) {
-                    songClickListener.onSongClick(musicModel.getAllSongs().get(position),true);
+                    songClickListener.onSongClick(musicModel.getAllSongs().get(position), true);
                 }
-            });
+            }, false, new SongsListAdapter.SongOptionsToAddInPlaylistListener() {
+                @Override
+                public void addInPlaylist(SongsModel songsModel, int pos) {
+                   songAddToPlaylistListener.addInPlaylist(songsModel,pos);
+                }
+            },null);
             recyclerView.setAdapter(songsListAdapter);
         }
         return view;
@@ -91,5 +98,8 @@ public class MainChildSongsFragment extends Fragment {
     }
     public interface SongClickListener{
         void onSongClick(SongsModel song,boolean isExpanded);
+    }
+    public  interface SongAddToPlaylistListener{
+        void addInPlaylist(SongsModel songsModel,int pos);
     }
 }

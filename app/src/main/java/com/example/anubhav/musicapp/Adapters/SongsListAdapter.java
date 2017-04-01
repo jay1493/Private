@@ -3,6 +3,7 @@ package com.example.anubhav.musicapp.Adapters;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,11 +25,20 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     private Context context;
     private List<SongsModel> songsModel;
     private ItemClickListener itemClickListener;
+    private boolean showPlaylistLayout;
+    private SongOptionsToAddInPlaylistListener songOptionsToAddInPlaylistListener;
+    private SongOptionsDeleteFromPlaylistListener songOptionsDeleteFromPlaylistListener;
 
-    public SongsListAdapter(Context context, List<SongsModel> songsModel, ItemClickListener itemClickListener) {
+    public SongsListAdapter(Context context, List<SongsModel> songsModel, ItemClickListener itemClickListener,
+                            boolean showPlaylistLayout, SongOptionsToAddInPlaylistListener songOptionsToAddInPlaylistListener,
+                            SongOptionsDeleteFromPlaylistListener songOptionsDeleteFromPlaylistListener) {
+
         this.context = context;
         this.songsModel = songsModel;
         this.itemClickListener = itemClickListener;
+        this.showPlaylistLayout = showPlaylistLayout;
+        this.songOptionsToAddInPlaylistListener = songOptionsToAddInPlaylistListener;
+        this.songOptionsDeleteFromPlaylistListener = songOptionsDeleteFromPlaylistListener;
     }
 
     @Override
@@ -38,7 +48,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     }
 
     @Override
-    public void onBindViewHolder(SongsListAdapter.CustomHolder holder, int position) {
+    public void onBindViewHolder(SongsListAdapter.CustomHolder holder, final int position) {
         Bitmap bitmapFactory = BitmapFactory.decodeFile(songsModel.get(position).getSongAlbumCover());
         if(bitmapFactory!=null && bitmapFactory.getRowBytes()>0) {
             holder.songImage.setImageBitmap(bitmapFactory);
@@ -47,6 +57,28 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         }
         holder.songTitle.setText(songsModel.get(position).getSongTitle());
         holder.songArtistTitle.setText(songsModel.get(position).getSongArtist());
+        if(showPlaylistLayout){
+            if(holder.songOptions.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
+                holder.songOptions.setImageDrawable(context.getResources().getDrawable(R.drawable.arrange_songs_in_playlist));
+            }
+            holder.songOptions.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(songOptionsDeleteFromPlaylistListener!=null) {
+                        songOptionsDeleteFromPlaylistListener.deleteFromPlaylist(songsModel.get(position), position);
+                    }
+                }
+            });
+        }else{
+            holder.songOptions.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(songOptionsToAddInPlaylistListener!=null) {
+                        songOptionsToAddInPlaylistListener.addInPlaylist(songsModel.get(position), position);
+                    }
+                }
+            });
+        }
 
     }
 
@@ -63,11 +95,13 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     class CustomHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private ImageView songImage;
+        private ImageView songOptions;
         private TextView songTitle;
         private TextView songArtistTitle;
         public CustomHolder(View itemView) {
             super(itemView);
             songImage = (ImageView)itemView.findViewById(R.id.songImage_list_of_songs);
+            songOptions = (ImageView)itemView.findViewById(R.id.songOptions);
             songTitle = (TextView)itemView.findViewById(R.id.songName_list_of_songs);
             songArtistTitle = (TextView)itemView.findViewById(R.id.singerName_list_of_songs);
             itemView.setOnClickListener(this);
@@ -78,5 +112,11 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         public void onClick(View view) {
             itemClickListener.itemClick(view,getAdapterPosition());
         }
+    }
+    public interface SongOptionsToAddInPlaylistListener{
+        void addInPlaylist(SongsModel songsModel,int pos);
+    }
+    public interface SongOptionsDeleteFromPlaylistListener{
+        void deleteFromPlaylist(SongsModel songsModel,int pos);
     }
 }
