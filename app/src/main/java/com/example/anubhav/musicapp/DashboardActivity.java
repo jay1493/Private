@@ -21,6 +21,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -202,6 +203,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private SongsListAdapter playlistAdapter;
     private SongsModel currentPlayingSong;
     private ArrayList<SongsModel> copyPlaylistList;
+    private ImageView skipPrevious,skipNext;
+    private SongsModel retrievedCurrentSong = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -237,6 +240,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             playlistModel = gson.fromJson(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null),PlaylistModel.class);
 
         }
+        //Todo: Retreive retrievedCurrentSong :
     }
 
     private void setUpAudioFingerPrinting() {
@@ -315,19 +319,23 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
         playlistRecyclerView.setLayoutManager(new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false));
-        songName.setText("Not Playing");
+        songName.setText(getResources().getString(R.string.Not_Playing));
         songArtistName = (TextView) findViewById(R.id.song_ArtistName_In_onScreen_Layout);
-        songArtistName.setText("Unknown");
+        songArtistName.setText(getResources().getString(R.string.Unknown));
         playlist_Or_pauseButton = (ImageView) findViewById(R.id.pause_play_button_in_onScreen_layout);
         albumImageLayout = (LinearLayout) findViewById(R.id.playbackImage_musicLayout);
         songAlbumImage = (ImageView) findViewById(R.id.songAlbumImage_musicLayout);
         playlistLayout = (RelativeLayout) findViewById(R.id.playlist_musicLayout);
+        skipPrevious = (ImageView) findViewById(R.id.skipPrevious_song);
+        skipNext     = (ImageView) findViewById(R.id.skipNext_song);
         seekBar = (SeekBar) findViewById(R.id.music_seekbar);
         playPause = (ImageView) findViewById(R.id.playPause_song_musicLayout);
         currentTimer = (TextView) findViewById(R.id.currentTimer);
         seekbarHandler = new Handler();
         decimalFormat = new java.text.DecimalFormat("0.00");
         playPause.setOnClickListener(this);
+        skipNext.setOnClickListener(this);
+        skipPrevious.setOnClickListener(this);
         seekBar.setEnabled(false);
         playlist_Or_pauseButton.setOnClickListener(this);
         playPause.setOnClickListener(this);
@@ -455,6 +463,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         Bitmap albumCover = BitmapFactory.decodeFile(songModelReceivedFromMusicPLayer.getSongAlbumCover());
         if(albumCover!=null && albumCover.getRowBytes() > 0){
             songAlbumImage.setImageBitmap(albumCover);
+        }else{
+            songAlbumImage.setImageDrawable(getResources().getDrawable(R.drawable.index));
         }
     }
 
@@ -508,12 +518,14 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     }
                 }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
                     //Setup Playlist...
-                    if(playlistModel!=null && playlistModel.getSongsModelList().size() >1) {
+                    if(copyPlaylistList!=null && copyPlaylistList.size() >0) {
                         songAlbumImage.setVisibility(View.GONE);
                         playlistLayout.setVisibility(View.VISIBLE);
                         if(currentPlayingSong!=null) {
 //                            playlistModel.copyToDuplicateList(currentPlayingSong);
-                            copyPlaylistList.remove(currentPlayingSong);
+                            if(copyPlaylistList.contains(currentPlayingSong)) {
+                                copyPlaylistList.remove(currentPlayingSong);
+                            }
                         }else{
                             copyPlaylistList = playlistModel.getSongsModelList();
                         }
@@ -522,12 +534,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             public void itemClick(View view, int position) {
                                 SongsModel tempCurrentModel = copyPlaylistList.get(position);
                                 if(currentPlayingSong!=null){
-                                     copyPlaylistList.add(currentPlayingSong);
+                                    if(!copyPlaylistList.contains(currentPlayingSong)) {
+                                        copyPlaylistList.add(currentPlayingSong);
+                                    }
                                 }
                                 currentPlayingSong = tempCurrentModel;
                                 inflateMusicLayout(currentPlayingSong);
 //                                playlistModel.removeCurrentSong(currentPlayingSong);
-                                copyPlaylistList.remove(currentPlayingSong);
+                                if(copyPlaylistList.contains(currentPlayingSong)) {
+                                    copyPlaylistList.remove(currentPlayingSong);
+                                }
                                 playlistAdapter.notifyDataSetChanged();
                             }
                         }, true, null, this);
@@ -552,6 +568,21 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     }
                 }else{
                     //Currently Paused
+                    if(currentPlayingSong == null && copyPlaylistList.size()>0){
+                        currentPlayingSong = copyPlaylistList.get(0);
+                        if(copyPlaylistList.contains(currentPlayingSong)){
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }
+                        if(copyPlaylistList.size() == 0){
+                            albumImageLayout.setVisibility(View.VISIBLE);
+                            playlistLayout.setVisibility(View.GONE);
+                            playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                        }
+                        inflateMusicLayout(currentPlayingSong);
+                        if(playlistAdapter!=null){
+                            playlistAdapter.notifyDataSetChanged();
+                        }
+                    }
                     if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
                         //In secs
                         musicService.resumePlayback();
@@ -595,6 +626,61 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
                     fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch);
                     fragmentTransaction.commit();
+                }
+                break;
+            case R.id.skipPrevious_song:
+                if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
+
+                    if(currentPlayingSong!=null){
+                        SongsModel songsModel = currentPlayingSong;
+                        currentPlayingSong = copyPlaylistList.get(copyPlaylistList.size()-1);
+                        if(copyPlaylistList.contains(currentPlayingSong)) {
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }
+                        inflateMusicLayout(currentPlayingSong);
+                        if(!copyPlaylistList.contains(songsModel)) {
+                            copyPlaylistList.add(songsModel);
+                        }
+                        if(playlistAdapter!=null){
+                            playlistAdapter.notifyDataSetChanged();
+                        }
+                    }else{
+                        currentPlayingSong = copyPlaylistList.get(copyPlaylistList.size()-1);
+                        inflateMusicLayout(currentPlayingSong);
+                        if(copyPlaylistList.contains(currentPlayingSong)) {
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }
+                        if(playlistAdapter!=null){
+                            playlistAdapter.notifyDataSetChanged();
+                        }
+
+                    }
+                }else{
+                    initializeSnackBar(getResources().getString(R.string.Current_playlist_is_empty));
+                }
+                break;
+            case R.id.skipNext_song:
+                if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
+
+                    if(currentPlayingSong!=null){
+                        SongsModel songsModel = currentPlayingSong;
+                        currentPlayingSong = copyPlaylistList.get(0);
+                        if(copyPlaylistList.contains(currentPlayingSong)) {
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }
+                        inflateMusicLayout(currentPlayingSong);
+                        if(!copyPlaylistList.contains(songsModel)) {
+                            copyPlaylistList.add(songsModel);
+                        }
+                        if(playlistAdapter!=null){
+                            playlistAdapter.notifyDataSetChanged();
+                        }
+                    }else{
+                        currentPlayingSong = copyPlaylistList.get(0);
+
+                    }
+                }else{
+                    initializeSnackBar(getResources().getString(R.string.Current_playlist_is_empty));
                 }
                 break;
         }
@@ -898,11 +984,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             audioFingerPrintingResultModel.setMusicList(musicList);
                             fingerprintingRecordsFound(audioFingerPrintingResultModel);
                         }else{
-                            Toast.makeText(context, "Oops! No Match Found Here!", Toast.LENGTH_SHORT).show();
+                            initializeSnackBar(getResources().getString(R.string.no_match_found_of_fingerprinting));
                         }
                     }else{
-                        Toast.makeText(context, "Oops! No Match Found Here!", Toast.LENGTH_SHORT).show();
-
+                        initializeSnackBar(getResources().getString(R.string.no_match_found_of_fingerprinting));
                     }
 
                 }else{
@@ -910,7 +995,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     audioFingerPrintingResultModel.setErrorCode(String.valueOf((Integer)statusObject.get("code")));
                     audioFingerPrintingResultModel.setErrorMsg(String.valueOf(statusObject.get("msg")));
                     audioFingerPrintingResultModel.setMusicList(null);
-                    Toast.makeText(context, "An Error Occurred! Try Again!!", Toast.LENGTH_SHORT).show();
+                    initializeSnackBar(getResources().getString(R.string.error_occurred_in_fingerprinting));
                 }
             }
         } catch (JSONException e) {
@@ -1043,7 +1128,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         inflateMusicLayout(song);
         if(playlistModel!=null){
             if(currentPlayingSong!=null) {
-                copyPlaylistList.add(currentPlayingSong);
+                if(!copyPlaylistList.contains(currentPlayingSong)) {
+                    copyPlaylistList.add(currentPlayingSong);
+                }
             }
             currentPlayingSong = song;
             if(playlistAdapter!=null){
@@ -1084,7 +1171,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         if(playlistModel!=null){
              playlistModel.putSong(songsModel);
              if(!copyPlaylistList.contains(songsModel)) {
-                 copyPlaylistList.add(songsModel);
+                 if((currentPlayingSong != null && currentPlayingSong!=songsModel) || currentPlayingSong == null) {
+                     initializeSnackBar(getResources().getString(R.string.Song_added_to_playlist));
+                     copyPlaylistList.add(songsModel);
+                 }
              }
              if(copyPlaylistList.size()>1){
                  if(playlistAdapter!=null){
@@ -1092,9 +1182,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                  }
              }
              if(copyPlaylistList.size() == 1){
-                 currentPlayingSong = songsModel;
-                 inflateMusicLayout(songsModel);
+                 if(currentPlayingSong!=null){
+
+                     if(playlistAdapter!=null){
+                         playlistAdapter.notifyDataSetChanged();
+                     }
+                 }else{
+                     currentPlayingSong = songsModel;
+                     inflateMusicLayout(songsModel);
+                 }
              }
+
         }
 
     }
@@ -1104,18 +1202,25 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         if(playlistModel!=null){
             playlistModel.removeSong(songsModel);
             if(currentPlayingSong != songsModel){
-                copyPlaylistList.remove(songsModel);
+                if(copyPlaylistList.contains(songsModel)) {
+                    copyPlaylistList.remove(songsModel);
+                }
                 if(copyPlaylistList.size() == 0){
                     songAlbumImage.setVisibility(View.VISIBLE);
                     playlistLayout.setVisibility(View.GONE);
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
             }else{
-                //Todo Redo the inflatedExpandedView Layout...(NO NEED)
             }
+            initializeSnackBar(getResources().getString(R.string.Song_removed_from_playlist));
             if(playlistAdapter!=null){
                 playlistAdapter.notifyDataSetChanged();
             }
         }
+    }
+
+    public void initializeSnackBar(String str){
+        Snackbar snackbar = Snackbar.make(mainDashboardLayout,str,Snackbar.LENGTH_SHORT);
+        snackbar.show();
     }
 }

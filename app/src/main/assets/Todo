@@ -5,9 +5,14 @@
              */
 ================================================================
 
-1.)Prepare a music player(improve layout, all buttons should be working, prepare a playlist(current))
-2.)Music should be kept on playing in background if not stopped.
-3.)Fix Keyboard Issue of Search Song EditText
+1.)Remember last currently played song
+2.)Play songs from album
+3.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
+   to check if the user is using the app for the first time)
+4.)Provide a dark background before download links popup
+5.)Issue connectivity check functions on all classes...(if not connected then disable the arccloud
+    and video search funtionality)
+6.)Fix Keyboard Issue of Search Song EditText
 
 ==========================================================================
            /**
@@ -15,9 +20,9 @@
             */
 ===========================================================================
 
-4.)Issue connectivity check functions on all classes...
 
-5.) Modifying Layouts:
+7.)Music should be kept on playing in background if not stopped.
+8.) Modifying Layouts:
      a.) Download Links(Have a check)
 
 0.) /*
