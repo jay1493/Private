@@ -5,17 +5,24 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.example.anubhav.musicapp.Adapters.AlbumsListAdapter;
+import com.example.anubhav.musicapp.Adapters.SongsListAdapter;
 import com.example.anubhav.musicapp.Constants;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.R;
 
 import java.util.ArrayList;
@@ -35,11 +42,22 @@ public class MainChildAlbumFragment extends Fragment {
     private static int position;
     private static int layout;
     private static MusicModel musicModel;
+    private LinearLayout albumSongsLayout;
+    private ImageView backtoAlbums;
+    private TextView albumName;
+    private RecyclerView albumSongsRecycler;
+    private SongsListAdapter songsListAdapter;
+    private View albumSongsView;
+    private MainChildSongsFragment.SongClickListener songClickListener;
+    private MainChildSongsFragment.SongAddToPlaylistListener songAddToPlaylistListener;
+    private TextView albumArtistName;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         activityContext = context;
+        songClickListener = (MainChildSongsFragment.SongClickListener)context;
+        songAddToPlaylistListener = (MainChildSongsFragment.SongAddToPlaylistListener)context;
     }
 
     public static MainChildAlbumFragment getInstance(Bundle bundle){
@@ -65,14 +83,51 @@ public class MainChildAlbumFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(layout,null);
         recyclerView = (RecyclerView)view.findViewById(R.id.recyclerView_musicLibrary);
+        albumSongsLayout = (LinearLayout) view.findViewById(R.id.albumSongsLayout);
+        albumSongsLayout.setVisibility(View.GONE);
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(),3));
         if(musicModel !=null) {
             albumsListAdapter = new AlbumsListAdapter(getActivity(), musicModel.getAllAlbums(), new ItemClickListener() {
                 @Override
                 public void itemClick(View view, int position) {
+                    //Add a fragment on the layout, and make it visible
+                    albumSongsView = inflater.inflate(R.layout.layout_album_songs,null);
+                    backtoAlbums = (ImageView) albumSongsView.findViewById(R.id.backToAllAlbums);
+                    backtoAlbums.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if(albumSongsView!=null){
+                                albumSongsLayout.removeAllViews();
+                                recyclerView.setVisibility(View.VISIBLE);
+                                albumSongsLayout.setVisibility(View.GONE);
+                            }
+                        }
+                    });
+                    albumName =(TextView) albumSongsView.findViewById(R.id.albumName);
+                    albumArtistName =(TextView) albumSongsView.findViewById(R.id.albumArtistName);
+                    albumName.setText(musicModel.getAllAlbums().get(position).getAlbumTitle());
+                    albumArtistName.setText(musicModel.getAllAlbums().get(position).getArtistTitle());
+                    albumSongsRecycler = (RecyclerView)albumSongsView.findViewById(R.id.albumSongsRecycler);
+                    albumSongsRecycler.setLayoutManager(new LinearLayoutManager(getParentFragment().getActivity(),LinearLayoutManager.VERTICAL,false));
+                        songsListAdapter = new SongsListAdapter(getParentFragment().getActivity(), musicModel.getAllAlbums().get(position).getSongs(), new ItemClickListener() {
+                            @Override
+                            public void itemClick(View view, int position) {
+                    songClickListener.onSongClick(musicModel.getAllAlbums().get(position).getSongs().get(position), true);
+                            }
+                        }, false, new SongsListAdapter.SongOptionsToAddInPlaylistListener() {
+                            @Override
+                            public void addInPlaylist(SongsModel songsModel, int pos) {
+                    songAddToPlaylistListener.addInPlaylist(songsModel,pos);
+                            }
+                        },null);
+                    albumSongsRecycler.setAdapter(songsListAdapter);
+                    albumSongsLayout.addView(albumSongsView);
+                    albumSongsLayout.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+
 
                 }
             });

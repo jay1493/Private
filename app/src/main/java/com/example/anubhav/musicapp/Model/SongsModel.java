@@ -1,6 +1,8 @@
 package com.example.anubhav.musicapp.Model;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Created by anubhav on 28/3/17.
@@ -79,5 +81,31 @@ public class SongsModel implements Serializable {
 
     public void setSongArtist(String songArtist) {
         this.songArtist = songArtist;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SongsModel that = (SongsModel) o;
+        return equals(songId, that.songId) &&
+                equals(songAlbumId, that.songAlbumId) &&
+                equals(songAlbumName, that.songAlbumName) &&
+                equals(songDuration, that.songDuration) &&
+                equals(songTitle, that.songTitle) &&
+                equals(trackNoOfSongInAlbum, that.trackNoOfSongInAlbum) &&
+                equals(songArtist, that.songArtist) &&
+                equals(songAlbumCover, that.songAlbumCover);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.hash(songId, songAlbumId, songAlbumName, songDuration, songTitle, trackNoOfSongInAlbum, songArtist, songAlbumCover);
+    }
+    public static int hash(Object... values) {
+        return Arrays.hashCode(values);
+    }
+    public static boolean equals(Object a, Object b) {
+        return (a == b) || (a != null && a.equals(b));
     }
 }

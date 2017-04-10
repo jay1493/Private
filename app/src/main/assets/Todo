@@ -5,14 +5,13 @@
              */
 ================================================================
 
-1.)Remember last currently played song
-2.)Play songs from album
-3.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
+1.)Provide behaviour that when scrolling songs/albums...hide the onDashboard Music-Layout
+2.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
    to check if the user is using the app for the first time)
-4.)Provide a dark background before download links popup
-5.)Issue connectivity check functions on all classes...(if not connected then disable the arccloud
+3.)Provide a dark background before download links popup
+4.)Issue connectivity check functions on all classes...(if not connected then disable the arccloud
     and video search funtionality)
-6.)Fix Keyboard Issue of Search Song EditText
+5.)Fix Keyboard Issue of Search Song EditText
 
 ==========================================================================
            /**

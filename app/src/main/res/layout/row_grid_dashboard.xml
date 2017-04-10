@@ -25,7 +25,8 @@
                 android:id="@+id/albumImage"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="fitXY"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
                 app:srcCompat="@drawable/album_placeholder"/>
         </RelativeLayout>
         <View android:layout_height="0dp" android:layout_weight="0.1" android:layout_width="match_parent" android:background="@color/black"/>

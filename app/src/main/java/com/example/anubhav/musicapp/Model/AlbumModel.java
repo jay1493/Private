@@ -51,7 +51,7 @@ public class AlbumModel implements Serializable {
         this.artistTitle = artistTitle;
     }
 
-    public List<SongsModel> getSongs() {
+    public ArrayList<SongsModel> getSongs() {
         return songs;
     }
 

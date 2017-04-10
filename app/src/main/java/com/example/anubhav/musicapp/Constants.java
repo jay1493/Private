@@ -30,4 +30,7 @@ public class Constants {
     public static final String SHARED_PREFS_NAME = "SHARED_PREFS_NAME";
     public static final String PLAYLIST_SHARED_PREFS = "PLAYLIST_SHARED_PREFS";
     public static final String PLAYLIST_FROM_SHARED_PREFS = "PLAYLIST_FROM_SHARED_PREFS";
+    public static final String CURRENT_SONG_SHARED_PREFS = "CURRENT_SONG_SHARED_PREFS";
+    public static final String CURRENT_SONG_FROM_PREFS = "CURRENT_SONG_FROM_PREFS";
+    public static final String SHOW_CLICKED_ALBUM_SONGS = "SHOW_CLICKED_ALBUM_SONGS";
 }

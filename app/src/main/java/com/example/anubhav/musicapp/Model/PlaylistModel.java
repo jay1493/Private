@@ -17,7 +17,11 @@ public class PlaylistModel implements Serializable {
     }
 
     public ArrayList<SongsModel> getSongsModelList() {
-        return songsModelList;
+        ArrayList<SongsModel> tempList = new ArrayList<>();
+        for(SongsModel songsModel : songsModelList){
+            tempList.add(songsModel);
+        }
+        return tempList;
     }
     public void putSong(SongsModel songsModel){
         boolean isDuplicate = false;
