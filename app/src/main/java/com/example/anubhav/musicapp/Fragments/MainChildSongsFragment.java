@@ -34,7 +34,7 @@ public class MainChildSongsFragment extends Fragment {
     private static MainChildSongsFragment fragContext = null;
     private static int position;
     private static int layout;
-    private SongsListAdapter songsListAdapter;
+    private static SongsListAdapter songsListAdapter;
     private static MusicModel musicModel;
     private SongClickListener songClickListener;
     private SongAddToPlaylistListener songAddToPlaylistListener;
@@ -101,5 +101,10 @@ public class MainChildSongsFragment extends Fragment {
     }
     public  interface SongAddToPlaylistListener{
         void addInPlaylist(SongsModel songsModel,int pos);
+    }
+    public static void notifyAdapterFromActivity(MusicModel musicModelFromActivity){
+        musicModel = musicModelFromActivity;
+        songsListAdapter.notifyDataSetChanged();
+
     }
 }

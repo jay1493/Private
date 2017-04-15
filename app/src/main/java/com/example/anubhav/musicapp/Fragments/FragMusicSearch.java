@@ -3,12 +3,16 @@ package com.example.anubhav.musicapp.Fragments;
 import android.annotation.TargetApi;
 import android.app.NotificationManager;
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.NotificationCompat;
@@ -91,12 +95,15 @@ public class FragMusicSearch extends Fragment {
     private NotificationManager notificationManager;
     private NotificationCompat.Builder notifBuilder;
     private String decodedSearchStr ="";
-    private int notifId = 0;
+    private int notifId = -1;
     private ArrayList<VideoLinksModel> videoLinks;
     private ArrayList<AudioLinksModel> audioLinks;
     private View fetchedClickedView;
     private int fetchedClickedPos;
     private PopupWindow popUpWindow;
+    private String songDuration;
+    private String songTitle;
+    private String searchedSongTitle;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
@@ -147,6 +154,7 @@ public class FragMusicSearch extends Fragment {
 
             }
             if(isConnectionPresent()){
+                searchedSongTitle = key;
                 Pattern pattern = Pattern.compile("\\s+");
                 Matcher matcher = pattern.matcher(key);
                 decodedSearchStr = matcher.replaceAll("%20");
@@ -578,6 +586,8 @@ public class FragMusicSearch extends Fragment {
             progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.show();
+            videoLinks = new ArrayList<>();
+            audioLinks = new ArrayList<>();
         }
 
         @Override
@@ -590,6 +600,9 @@ public class FragMusicSearch extends Fragment {
             try {
                 keepVidHome = Jsoup.connect(downloadLinks).get();
                 Element body = keepVidHome.select("body").get(0);
+                Elements timer = body.getElementsByClass("text");
+                songDuration =  timer.get(1).getElementsByIndexEquals(2).text();
+                songTitle = timer.get(1).getElementsByIndexEquals(1).get(0).child(0).text();
                 Elements divLinkBody = body.getElementsByClass("d-info2");
                 Elements dlElements = divLinkBody.select("dl");
                 for(Element dtElement : dlElements){
@@ -712,7 +725,7 @@ public class FragMusicSearch extends Fragment {
             notifBuilder = new NotificationCompat.Builder(activityContext);
             notifBuilder.setColor(activityContext.getResources().getColor(R.color.black_slight_alpha));
             notifBuilder.setContentTitle(activityContext.getResources().getString(R.string.app_name));
-            notifBuilder.setContentText(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you)+" ("+decodedSearchStr+")");
+            notifBuilder.setContentText(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you)+" ("+searchedSongTitle.trim().toLowerCase()+")");
             notifBuilder.setLights(activityContext.getResources().getColor(R.color.red),1000,5000);
             notifBuilder.setOngoing(true);
             notifBuilder.setSmallIcon(R.drawable.notif_icon);
@@ -720,14 +733,14 @@ public class FragMusicSearch extends Fragment {
             progressDialog.setMessage(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you));
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.show();
+            ++notifId;
         }
 
         @Override
         protected String doInBackground(String... params) {
             String video = params[0];
             String videoExtension = params[1];
-            String videoTitle = params[2];
-            notifId++;
+
             try {
                 String userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0.1)";
                 URL url = new URL(video);
@@ -744,8 +757,10 @@ public class FragMusicSearch extends Fragment {
                     if(!fileDir.exists()){
                         fileDir.mkdirs();
                     }
-                    //Todo: Do something about naming files.. Done!! I Suppose...
-                    File songFile = new File(fileDir,decodedSearchStr+"."+videoExtension);
+                    if(videoExtension.trim().equalsIgnoreCase("M4A")){
+                        videoExtension = "mp3";
+                    }
+                    File songFile = new File(fileDir,searchedSongTitle.trim()+"."+videoExtension);
                     if(songFile.exists()){
                         songFile.delete();
                     }
@@ -755,7 +770,7 @@ public class FragMusicSearch extends Fragment {
                     int count;
                     long total =0;
                     progressDialog.dismiss();
-                    while((count = inputStream.read(bytes))!=-1){
+                    while((count = inputStream.read(bytes))>0){
                         if (isCancelled()) {
                             inputStream.close();
                             return null;
@@ -765,7 +780,6 @@ public class FragMusicSearch extends Fragment {
                         if (fileLength > 0) { // only if total length is known
 //                            publishProgress((int) (total * 100 / fileLength));
                             notifBuilder.setProgress(99,(int) ((total*100)/fileLength),false);
-
                         }else{
                             notifBuilder.setProgress(0,0,true);
                         }
@@ -781,22 +795,55 @@ public class FragMusicSearch extends Fragment {
 
             } catch (MalformedURLException e) {
                 e.printStackTrace();
+                notifBuilder.setProgress(0,0,false);
+                notifBuilder.setContentText(activityContext.getResources().getString(R.string.download_interupted));
+                notifBuilder.setOngoing(false);
+                notificationManager.notify(notifId,notifBuilder.build());
             } catch (IOException e) {
                 e.printStackTrace();
+                notifBuilder.setProgress(0,0,false);
+                notifBuilder.setContentText(activityContext.getResources().getString(R.string.download_interupted));
+                notifBuilder.setOngoing(false);
+                notificationManager.notify(notifId,notifBuilder.build());
             }
 
-
-            return "Success";
+            notifBuilder.setProgress(0,0,false);
+            notifBuilder.setContentText(activityContext.getResources().getString(R.string.download_complete));
+            notifBuilder.setOngoing(false);
+            notificationManager.notify(notifId,notifBuilder.build());
+            return videoExtension;
         }
 
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            notifBuilder.setProgress(0,0,false);
-            notifBuilder.setContentText(activityContext.getResources().getString(R.string.download_complete));
-            notifBuilder.setOngoing(false);
-            notificationManager.notify(notifId,notifBuilder.build());
+            if(result.trim().equalsIgnoreCase("M4A")|| result.trim().equalsIgnoreCase("mp3")) {
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(MediaStore.Audio.AudioColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
+                contentValues.put(MediaStore.Audio.AudioColumns.TITLE, searchedSongTitle.trim());
+                contentValues.put(MediaStore.Audio.AudioColumns.ALBUM, Constants.APP_NAME);
+                contentValues.put(MediaStore.Audio.AudioColumns.ARTIST, songTitle);
+                songDuration = songDuration.replace(':', '.');
+                Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
+                Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
+                contentValues.put(MediaStore.Audio.AudioColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
+                contentValues.put(MediaStore.Audio.AudioColumns.DISPLAY_NAME, searchedSongTitle.trim());
+// more columns should be filled from here
+                activityContext.getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues);
+            }else{
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(MediaStore.Video.VideoColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
+                contentValues.put(MediaStore.Video.VideoColumns.TITLE, searchedSongTitle.trim());
+                contentValues.put(MediaStore.Video.VideoColumns.ARTIST, songTitle);
+                songDuration = songDuration.replace(':', '.');
+                Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
+                Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
+                contentValues.put(MediaStore.Video.VideoColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
+                contentValues.put(MediaStore.Video.VideoColumns.DISPLAY_NAME, searchedSongTitle.trim());
+// more columns should be filled from here
+                activityContext.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
 
+            }
         }
 
     }

@@ -47,9 +47,9 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="8"
                             android:maxLines="2"
-                            android:textIsSelectable="true"
                             android:textColor="#FFFFFF"
-                            android:inputType="textCapWords"
+                            android:focusableInTouchMode="true"
+                            android:inputType="textCapSentences"
                             android:textColorHint="#FFFFFF"
                             android:hint="@string/Search_a_song"
                             android:drawableRight="@drawable/youtube"/>
@@ -95,7 +95,8 @@
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="7">
+                    android:layout_weight="7"
+                    android:layout_marginBottom="@dimen/d110">
 
                     <LinearLayout
                         android:id="@+id/mainLayout"

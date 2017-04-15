@@ -3,6 +3,8 @@ package com.example.anubhav.musicapp.Observers;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.MusicModel;
@@ -12,6 +14,7 @@ import com.example.anubhav.musicapp.Model.MusicModel;
  */
 
 public class MySongsObserver extends ContentObserver {
+    private final Handler handlerFromActivity;
     private MusicModel musicModel;
     private ObserverListener observerListener;
     /**
@@ -21,6 +24,7 @@ public class MySongsObserver extends ContentObserver {
      */
     public MySongsObserver(Handler handler, MusicModel musicModel,ObserverListener observe) {
         super(handler);
+        handlerFromActivity = handler;
         this.musicModel = musicModel;
         this.observerListener = observe;
     }
@@ -32,10 +36,8 @@ public class MySongsObserver extends ContentObserver {
 
     @Override
     public void onChange(boolean selfChange, Uri uri) {
-        super.onChange(selfChange, uri);
-        //Change is There...
         observerListener.isProcessCompleted(true);
-
+        Log.d("", "onChange: Inside Observer============================");
 
 
     }

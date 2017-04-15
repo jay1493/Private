@@ -92,7 +92,7 @@ public class MainChildAlbumFragment extends Fragment {
         if(musicModel !=null) {
             albumsListAdapter = new AlbumsListAdapter(getActivity(), musicModel.getAllAlbums(), new ItemClickListener() {
                 @Override
-                public void itemClick(View view, int position) {
+                public void itemClick(View view, final int position) {
                     //Add a fragment on the layout, and make it visible
                     albumSongsView = inflater.inflate(R.layout.layout_album_songs,null);
                     backtoAlbums = (ImageView) albumSongsView.findViewById(R.id.backToAllAlbums);
@@ -114,8 +114,8 @@ public class MainChildAlbumFragment extends Fragment {
                     albumSongsRecycler.setLayoutManager(new LinearLayoutManager(getParentFragment().getActivity(),LinearLayoutManager.VERTICAL,false));
                         songsListAdapter = new SongsListAdapter(getParentFragment().getActivity(), musicModel.getAllAlbums().get(position).getSongs(), new ItemClickListener() {
                             @Override
-                            public void itemClick(View view, int position) {
-                    songClickListener.onSongClick(musicModel.getAllAlbums().get(position).getSongs().get(position), true);
+                            public void itemClick(View view, int pos) {
+                    songClickListener.onSongClick(musicModel.getAllAlbums().get(position).getSongs().get(pos), true);
                             }
                         }, false, new SongsListAdapter.SongOptionsToAddInPlaylistListener() {
                             @Override

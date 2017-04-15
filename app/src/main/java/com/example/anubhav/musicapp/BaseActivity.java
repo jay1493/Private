@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
@@ -16,7 +15,6 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.Model.SongsModel;
@@ -39,6 +37,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
     private ArrayList<SongsModel> songsModelArrayList;
     private ArrayList<AlbumModel> albumModelArrayList;
     private ProgressDialog progressDialog;
+    private Handler handler;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -59,55 +58,30 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onStop() {
         super.onStop();
-        Thread stopObserver = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                getContentResolver().unregisterContentObserver(mySongsObserver);
-            }
-        });
-        stopObserver.start();
-    }
-    public void setObserverOnActivity(final ObserverListener observe, final Context context){
-        final Thread settingUpObserver = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                mySongsObserver = new MySongsObserver(new Handler(context.getMainLooper()),musicModel,new ObserverListener(){
-
-                    @Override
-                    public void isProcessCompleted(boolean isComplete) {
-                            if(isComplete) {
-                                observe.isProcessCompleted(true);
-                            }else{
-                                observe.isProcessCompleted(false);
-                            }
-                    }
-                });
-                getContentResolver().registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,true,mySongsObserver);
-            }
-        });
-        settingUpObserver.start();
-        try {
-            settingUpObserver.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        observe.isProcessCompleted(false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
     }
-    public void callLoaders(Context context){
+    public void callLoaders(final Context context){
         albumModelArrayList = new ArrayList<>();
         songsModelArrayList = new ArrayList<>();
         albumModelHashMap = new HashMap();
-        progressDialog = new ProgressDialog(context);
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMessage(context.getResources().getString(R.string.Updating_List_For_You_Hold_On));
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.show();
-        getSupportLoaderManager().initLoader(1,null,this);
+        musicModel = new MusicModel();
+        handler = new Handler(context.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressDialog = new ProgressDialog(context);
+                progressDialog.setMessage(context.getResources().getString(R.string.Updating_List_For_You_Hold_On));
+                progressDialog.setCanceledOnTouchOutside(false);
+                progressDialog.show();
+                getSupportLoaderManager().initLoader(1,null,BaseActivity.this);
+            }
+        });
+
     }
 
     @Override
@@ -126,6 +100,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
         switch (loader.getId()){
             case 0:
                 if(loader!=null) {
+
                     isSongsLoadingComplete = true;
                     if(data!=null && data.moveToFirst()){
                         int songId = data.getColumnIndex(MediaStore.Audio.Media._ID);
@@ -141,15 +116,17 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
                             songsModel.setSongAlbumId(String.valueOf(data.getLong(albumId)));
                             songsModel.setSongAlbumName(data.getString(albumName));
                             songsModel.setSongDuration(String.valueOf(data.getLong(songDuration)));
-                            songsModel.setSongTitle(data.getString(songTitle));
-                            songsModel.setTrackNoOfSongInAlbum(String.valueOf(data.getInt(songTrack)));
-                            songsModel.setSongArtist(data.getString(songArtist));
-                            AlbumModel albumModel = (AlbumModel) albumModelHashMap.get(songsModel.getSongAlbumId());
-                            if(albumModel!=null){
-                                songsModel.setSongAlbumCover(albumModel.getAlbumCover());
-                                albumModel.putSongs(songsModel);
+                            if(data.getLong(songDuration)/(1000*60) >= 1) {
+                                songsModel.setSongTitle(data.getString(songTitle));
+                                songsModel.setTrackNoOfSongInAlbum(String.valueOf(data.getInt(songTrack)));
+                                songsModel.setSongArtist(data.getString(songArtist));
+                                AlbumModel albumModel = (AlbumModel) albumModelHashMap.get(songsModel.getSongAlbumId());
+                                if (albumModel != null) {
+                                    songsModel.setSongAlbumCover(albumModel.getAlbumCover());
+                                    albumModel.putSongs(songsModel);
+                                }
+                                songsModelArrayList.add(songsModel);
                             }
-                            songsModelArrayList.add(songsModel);
                         }while (data.moveToNext());
                     }
                 }else{
@@ -192,7 +169,13 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
             SharedPreferences.Editor editorPrefs = saveMusicModelSharedPrefs.edit();
             editorPrefs.putString(Constants.SHARED_PREFS_SAVED_MODEL,musicJson);
             editorPrefs.apply();
-            progressDialog.dismiss();
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    progressDialog.dismiss();
+
+                }
+            });
 
         }
 
@@ -203,4 +186,5 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
         albumModelArrayList = new ArrayList<>();
         songsModelArrayList = new ArrayList<>();
     }
+
 }

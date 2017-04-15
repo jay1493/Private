@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
@@ -207,6 +208,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private SongsModel retrievedCurrentSong = null;
     private SharedPreferences currentPlayingSongSharedPrefs;
     private SongsModel currentPlayingSongFromPrefs;
+    private boolean contentObserverExecuted;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -258,6 +260,28 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }
             }
         }
+     /*   final Handler handler = new Handler(context.getMainLooper());
+        fileObserver = new FileObserver(Constants.MUSIC_SAVE_PATH) {
+            @Override
+            public void onEvent(int event, String path) {
+                if(event == FileObserver.CREATE || event == FileObserver.DELETE || event == FileObserver.DELETE_SELF) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if(!contentObserverExecuted) {
+                                callLoaders(context);
+                                Toast.makeText(context, "File Observed", Toast.LENGTH_SHORT).show();
+                                musicModel = getMusicModel();
+                                MainChildSongsFragment.notifyAdapterFromActivity(musicModel);
+                                fileObserverExecuted = true;
+                            }
+                        }
+                    });
+                }
+            }
+        };
+        fileObserver.startWatching();*/
+        setUpContentObserver();
     }
 
     private void setUpAudioFingerPrinting() {
@@ -731,19 +755,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 break;
             case R.id.et_searchSong:
                 etSearchSong.requestFocus();
-                /** Inflate an overlapping view, to show searching is begin*/
-                //Default position 0
-                FragMusicSearch fragMusicSearch = FragMusicSearch.getInstance(null);
-                if(fragMusicSearch.isVisible()){
-                    /** Inflate an overlapping view, to show searching is resumed*/
-
-                }else {
-                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                    fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
-                    fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                    fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch);
-                    fragmentTransaction.commit();
-                }
                 break;
             case R.id.skipPrevious_song:
                 if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
@@ -856,7 +867,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             playlistEditor.putString(Constants.PLAYLIST_FROM_SHARED_PREFS,playlist);
             playlistEditor.apply();
         }
-
+        getContentResolver().unregisterContentObserver(mySongsObserver);
 
     }
 
@@ -871,24 +882,31 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             animationDrawable.start();
         }
         permissions();
-
     }
 
     private void setUpContentObserver() {
-        setObserverOnActivity(new ObserverListener() {
+        mySongsObserver = new MySongsObserver(new Handler(context.getMainLooper()),musicModel,new ObserverListener(){
+
             @Override
             public void isProcessCompleted(boolean isComplete) {
-                if(isComplete){
-                    //Change is there
-                    //update music model field...
-                    callLoaders(DashboardActivity.this);
-
-                }else {
-                    //No change
-                    //Do nothing, as we have musicModel from Intent....
+                if(isComplete) {
+                        contentObserverExecuted = true;
+                        callLoaders(DashboardActivity.this);
+                        Log.d("Dashboard", "isProcessCompleted: StartLoader");
+                        Toast.makeText(context, "Observer Observed", Toast.LENGTH_SHORT).show();
+                    //Todo Doubt about this...
+                        musicModel = gson.fromJson(getSharedPreferences(Constants.SHARED_PREFS_NAME, MODE_PRIVATE).getString(Constants.SHARED_PREFS_SAVED_MODEL, null), MusicModel.class);
+                        MainChildSongsFragment.notifyAdapterFromActivity(musicModel);
+                        return;
+                }else{
+                    Log.d("Dashboard", "isProcessCompleted: SavedModel");
+                    return;
                 }
             }
-        },context);
+        });
+        getContentResolver().registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,true,mySongsObserver);
+
+        Log.d("", "isProcessCompleted: OutsideFunction");
     }
 
     @Override
@@ -903,7 +921,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
                        fragmentTransaction.replace(R.id.fragmentView, mainSongFragment);
                        fragmentTransaction.commit();
-
+                       etSearchSong.setText("");
+                       etSearchSong.clearFocus();
                        break;
                }
            }
@@ -928,13 +947,12 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
 
     private void searchSong() {
-//Todo: Remove the below file, and fix the keyboard issue:
-        etSearchSong.setText("closer");
             /** Inflate an overlapping view, to show searching is resumed*/
            if(!etSearchSong.getText().toString().trim().equalsIgnoreCase("")) {
                Bundle bundle = new Bundle();
                bundle.putString(songFetchKey,etSearchSong.getText().toString().trim());
                FragMusicSearch fragMusicSearch = FragMusicSearch.getInstance(bundle);
+               etSearchSong.clearFocus();
                if(fragMusicSearch.isVisible()) {
                    fragMusicSearch.performSearch(etSearchSong.getText().toString().trim());
                } else {
@@ -988,17 +1006,14 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     requestPermissions(new String[]{Manifest.permission.WAKE_LOCK},Manifest_permission_WAKE_LOCK);
                 }
                 setUpInitialHomeFragment();
-                setUpContentObserver();
             }
             else{
-                setUpContentObserver();
                 if(activityCreatedForFirstTime) {
                     setUpInitialHomeFragment();
                 }
             }
             return;
         }else{
-            setUpContentObserver();
         }
         if(activityCreatedForFirstTime) {
             setUpInitialHomeFragment();
@@ -1014,7 +1029,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
-                    setUpContentObserver();
                 } else {
                     // User refused to grant permission.
                     permissions();
@@ -1256,7 +1270,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     @Override
     public void onSongClick(SongsModel song, boolean isExpanded) {
-        //Todo: i think the duplicacy is not handled here...
         inflateMusicLayout(song);
         if(playlistModel!=null){
             if(currentPlayingSong!=null) {
@@ -1360,4 +1373,5 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         Snackbar snackbar = Snackbar.make(mainDashboardLayout,str,Snackbar.LENGTH_SHORT);
         snackbar.show();
     }
+
 }

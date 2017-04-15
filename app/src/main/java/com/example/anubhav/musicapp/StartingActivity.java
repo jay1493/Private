@@ -1,18 +1,15 @@
 package com.example.anubhav.musicapp;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,14 +18,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
@@ -36,16 +29,13 @@ import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.Model.SongsModel;
+import com.example.anubhav.musicapp.Observers.MySongsObserver;
 import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by anubhav on 16/2/17.
@@ -69,6 +59,8 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
     private HashMap<String,AlbumModel> albumModelHashMap;
     private MusicModel musicModel;
     private SharedPreferences saveMusicModelSharedPrefs;
+    private MySongsObserver mySongsObserver;
+    private boolean contentObserverExecuted;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -104,6 +96,34 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
         logoName.setTypeface(typeface,Typeface.BOLD_ITALIC);
         GlideDrawableImageViewTarget glideDrawableImageViewTarget = new GlideDrawableImageViewTarget(mainLoader);
         Glide.with(this).load(R.raw.infinity1).into(glideDrawableImageViewTarget);
+        settingContentObserver();
+
+    }
+
+    private void settingContentObserver() {
+        mySongsObserver = new MySongsObserver(new Handler(context.getMainLooper()),musicModel,new ObserverListener(){
+
+            @Override
+            public void isProcessCompleted(boolean isComplete) {
+                if(isComplete) {
+                        contentObserverExecuted = true;
+                        getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
+                        return;
+                }else{
+                    //No change is there
+                    if(getMusicModel()!=null) {
+                        musicModel = getMusicModel();
+                        mainImage.setOnClickListener(StartingActivity.this);
+                    }else{
+                        getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
+                    }
+                    Log.d("", "isProcessCompleted: SavedModel");
+                    return;
+
+                }
+            }
+        });
+        getContentResolver().registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,true,mySongsObserver);
 
     }
 
@@ -111,20 +131,27 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
         if(getMusicModel()==null) {
             getSupportLoaderManager().initLoader(1, null, this);
         }else{
+            musicModel = getMusicModel();
+            mainImage.setOnClickListener(StartingActivity.this);
             //But check for a change
-            setObserverOnActivity(new ObserverListener() {
+          /*  setObserverOnActivity(new ObserverListener() {
                 @Override
                 public void isProcessCompleted(boolean isComplete) {
                        if(isComplete){
                            //Change
                            getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
+                           Log.d("", "isProcessCompleted: StartLoader");
+                           return;
                        }else{
                            //No change is there
                            musicModel = getMusicModel();
                            mainImage.setOnClickListener(StartingActivity.this);
+                           Log.d("", "isProcessCompleted: SavedModel");
+                           return;
                        }
                 }
-            },context);
+            },context);*/
+            Log.d("", "isProcessCompleted: OutsideFunction");
         }
     }
 
@@ -157,7 +184,6 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
     protected void onResume() {
         super.onResume();
         running = true;
-
     }
 
     private void permissions() {
@@ -224,15 +250,17 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                               songsModel.setSongAlbumId(String.valueOf(data.getLong(albumId)));
                               songsModel.setSongAlbumName(data.getString(albumName));
                               songsModel.setSongDuration(String.valueOf(data.getLong(songDuration)));
-                              songsModel.setSongTitle(data.getString(songTitle));
-                              songsModel.setTrackNoOfSongInAlbum(String.valueOf(data.getInt(songTrack)));
-                              songsModel.setSongArtist(data.getString(songArtist));
-                              AlbumModel albumModel = (AlbumModel) albumModelHashMap.get(songsModel.getSongAlbumId());
-                              if(albumModel!=null){
-                                  songsModel.setSongAlbumCover(albumModel.getAlbumCover());
-                                  albumModel.putSongs(songsModel);
+                              if(data.getLong(songDuration)/(1000*60) >= 1) {
+                                  songsModel.setSongTitle(data.getString(songTitle));
+                                  songsModel.setTrackNoOfSongInAlbum(String.valueOf(data.getInt(songTrack)));
+                                  songsModel.setSongArtist(data.getString(songArtist));
+                                  AlbumModel albumModel = (AlbumModel) albumModelHashMap.get(songsModel.getSongAlbumId());
+                                  if (albumModel != null) {
+                                      songsModel.setSongAlbumCover(albumModel.getAlbumCover());
+                                      albumModel.putSongs(songsModel);
+                                  }
+                                  songsModelArrayList.add(songsModel);
                               }
-                              songsModelArrayList.add(songsModel);
                           }while (data.moveToNext());
                       }
                   }else{
@@ -297,5 +325,4 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                 break;
         }
     }
-
 }

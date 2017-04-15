@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MusicApp</string>
+    <string name="app_name">Muziek</string>
     <string name="Search_a_song">Search a song here...</string>
     <string name="dashboardVideoLink">ytcropper.com/cropped/RP58a97f821e1fe</string>
     <string name="There_seems_a_problem">There seems a problem connecting with our servers. Please try again later...</string>
@@ -25,4 +25,5 @@
     <string name="Song_removed_from_playlist">Song removed from playlist</string>
     <string name="error_occurred_in_fingerprinting">An Error Occurred! Try Again!!</string>
     <string name="no_match_found_of_fingerprinting">Oops! No Match Found Here!</string>
+    <string name="download_interupted">Download Interupted</string>
 </resources>
