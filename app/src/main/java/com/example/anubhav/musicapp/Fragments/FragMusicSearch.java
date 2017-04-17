@@ -95,7 +95,7 @@ public class FragMusicSearch extends Fragment {
     private NotificationManager notificationManager;
     private NotificationCompat.Builder notifBuilder;
     private String decodedSearchStr ="";
-    private int notifId = -1;
+    private int notifId = 0;
     private ArrayList<VideoLinksModel> videoLinks;
     private ArrayList<AudioLinksModel> audioLinks;
     private View fetchedClickedView;
@@ -104,6 +104,7 @@ public class FragMusicSearch extends Fragment {
     private String songDuration;
     private String songTitle;
     private String searchedSongTitle;
+    private int numberOfNotifications = 0;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
@@ -715,7 +716,7 @@ public class FragMusicSearch extends Fragment {
     private class DownloadLink extends
             AsyncTask<String, Integer, String> {
         private ProgressDialog progressDialog;
-
+        private Handler handler;
 
         @Override
         protected void onPreExecute() {
@@ -726,6 +727,7 @@ public class FragMusicSearch extends Fragment {
             notifBuilder.setColor(activityContext.getResources().getColor(R.color.black_slight_alpha));
             notifBuilder.setContentTitle(activityContext.getResources().getString(R.string.app_name));
             notifBuilder.setContentText(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you)+" ("+searchedSongTitle.trim().toLowerCase()+")");
+            notifBuilder.setNumber(++numberOfNotifications);
             notifBuilder.setLights(activityContext.getResources().getColor(R.color.red),1000,5000);
             notifBuilder.setOngoing(true);
             notifBuilder.setSmallIcon(R.drawable.notif_icon);
@@ -733,7 +735,7 @@ public class FragMusicSearch extends Fragment {
             progressDialog.setMessage(activityContext.getResources().getString(R.string.getting_it_downloaded_for_you));
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.show();
-            ++notifId;
+            handler = new Handler(activityContext.getMainLooper());
         }
 
         @Override
@@ -773,16 +775,28 @@ public class FragMusicSearch extends Fragment {
                     while((count = inputStream.read(bytes))>0){
                         if (isCancelled()) {
                             inputStream.close();
+                            notifBuilder.setProgress(0,0,false);
+                            notifBuilder.setContentText(activityContext.getResources().getString(R.string.download_interupted));
+                            notifBuilder.setOngoing(false);
+                            notificationManager.notify(notifId,notifBuilder.build());
                             return null;
                         }
                         total += count;
                         // publishing the progress....
                         if (fileLength > 0) { // only if total length is known
 //                            publishProgress((int) (total * 100 / fileLength));
-                            notifBuilder.setProgress(99,(int) ((total*100)/fileLength),false);
+                            notifBuilder.setProgress(98,(int) ((total*100)/fileLength),false);
                         }else{
                             notifBuilder.setProgress(0,0,true);
                         }
+                 /*       final long totalCopy = total;
+                        final int fileLengthCopy = fileLength;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(activityContext,String.valueOf ((int) ((totalCopy * 100) / fileLengthCopy)), Toast.LENGTH_SHORT).show();
+                            }
+                        });*/
                         outputStream.write(bytes, 0, count);
                         notificationManager.notify(notifId,notifBuilder.build());
                     }

@@ -220,8 +220,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         context = this;
         init();
         setSupportActionBar(toolbar);
-        getSupportActionBar().setHomeButtonEnabled(true);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         GlideDrawableImageViewTarget imageViewTarget = new GlideDrawableImageViewTarget(videoLoader);
         Glide.with(this).load(R.raw.ripple1).into(imageViewTarget);
         mainLayout.setBackgroundResource(R.drawable.background_dashboard);
@@ -357,7 +355,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     }
 
     private void initExpandedView() {
-        //Todo: Handle all button click events
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);

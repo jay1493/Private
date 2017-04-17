@@ -5,11 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_drawable_1">
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:weightSum="10"
-    android:orientation="vertical">
     <LinearLayout
         android:id="@+id/dragLayout"
         android:layout_width="match_parent"
@@ -21,6 +16,11 @@
         android:paddingBottom="@dimen/d10">
         <include layout="@layout/on_dashboard_music_layout"/>
     </LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:weightSum="10"
+    android:orientation="vertical">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -65,14 +65,14 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2.2"
+        android:layout_weight="2.5"
         android:orientation="vertical">
         <android.support.v7.widget.AppCompatSeekBar
             android:id="@+id/music_seekbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="top"
-            android:padding="@dimen/d10"/>
+            android:padding="@dimen/d24"/>
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
