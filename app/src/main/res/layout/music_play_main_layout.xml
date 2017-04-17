@@ -41,6 +41,10 @@
                     android:id="@+id/playlistList"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:scrollbarAlwaysDrawVerticalTrack="true"
+                    android:scrollbars="vertical"
+                    android:fadeScrollbars="true"
+                    android:clickable="true"
                     android:background="@drawable/currently_playing_music_background">
 
                 </android.support.v7.widget.RecyclerView>

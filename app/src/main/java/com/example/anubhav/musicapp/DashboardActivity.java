@@ -349,7 +349,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         slidingLayout.setTouchEnabled(true);
         slidingLayout.setMotionEventSplittingEnabled(true);
         slidingLayout.setEnabled(true);
-        slidingLayout.setDragView(R.id.dragView);
+        slidingLayout.setDragView(R.id.collapsedView);
         initExpandedView();
         copyPlaylistList = new ArrayList<>();
     }
@@ -1325,7 +1325,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
             }
-        }
+        }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
+            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()
+                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()) {
+                if(playlistLayout.getVisibility() == View.VISIBLE){
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+
+                }else{
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                }
+             }
+            }
     }
 
 
