@@ -15,6 +15,8 @@ import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -732,22 +734,26 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }
                 break;
             case R.id.listenSong:
-                if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listen_song).getConstantState()){
-                    if(mediaPlayer!=null){
-                        mediaPlayer.setVolume(0f,0f);
-                    }
-                    resetAlbumSearchLayout(false);
-                    startFingerprinting();
-                    listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
-                }else{
-                    if(mediaPlayer!=null){
-                        mediaPlayer.setVolume(0f,0f);
-                    }
-                    resetAlbumSearchLayout(true);
-                    stopFingerprinting();
-                    cancel();
-                    listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
+                if(connectedToNetwork()) {
+                    if (listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context, R.drawable.listen_song).getConstantState()) {
+                        if (mediaPlayer != null) {
+                            mediaPlayer.setVolume(0f, 0f);
+                        }
+                        resetAlbumSearchLayout(false);
+                        startFingerprinting();
+                        listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
+                    } else {
+                        if (mediaPlayer != null) {
+                            mediaPlayer.setVolume(0f, 0f);
+                        }
+                        resetAlbumSearchLayout(true);
+                        stopFingerprinting();
+                        cancel();
+                        listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
 
+                    }
+                }else{
+                    initializeSnackBar(getResources().getString(R.string.functionality_disabled_as_you_are_not_connected_to_a_network));
                 }
                 break;
             case R.id.searchSong:
@@ -812,6 +818,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }
                 break;
         }
+    }
+
+    private boolean connectedToNetwork() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        if(networkInfo!=null && networkInfo.isConnected()){
+            return true;
+        }else{
+            return false;
+        }
+
     }
 
     @Override
@@ -893,10 +910,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         contentObserverExecuted = true;
                         callLoaders(DashboardActivity.this);
                         Log.d("Dashboard", "isProcessCompleted: StartLoader");
-                        Toast.makeText(context, "Observer Observed", Toast.LENGTH_SHORT).show();
-                    //Todo Doubt about this...
-                        musicModel = gson.fromJson(getSharedPreferences(Constants.SHARED_PREFS_NAME, MODE_PRIVATE).getString(Constants.SHARED_PREFS_SAVED_MODEL, null), MusicModel.class);
-                        MainChildSongsFragment.notifyAdapterFromActivity(musicModel);
+//                      Toast.makeText(context, "Observer Observed", Toast.LENGTH_SHORT).show();
                         return;
                 }else{
                     Log.d("Dashboard", "isProcessCompleted: SavedModel");
@@ -947,25 +961,28 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
 
     private void searchSong() {
-            /** Inflate an overlapping view, to show searching is resumed*/
-           if(!etSearchSong.getText().toString().trim().equalsIgnoreCase("")) {
-               Bundle bundle = new Bundle();
-               bundle.putString(songFetchKey,etSearchSong.getText().toString().trim());
-               FragMusicSearch fragMusicSearch = FragMusicSearch.getInstance(bundle);
-               etSearchSong.clearFocus();
-               if(fragMusicSearch.isVisible()) {
-                   fragMusicSearch.performSearch(etSearchSong.getText().toString().trim());
-               } else {
-                   FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                   fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
-                   fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-                   fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch, MUSICFRAGSERACH);
-                   fragmentTransaction.commit();
+            if(connectedToNetwork()) {
+                if (!etSearchSong.getText().toString().trim().equalsIgnoreCase("")) {
+                    Bundle bundle = new Bundle();
+                    bundle.putString(songFetchKey, etSearchSong.getText().toString().trim());
+                    FragMusicSearch fragMusicSearch = FragMusicSearch.getInstance(bundle);
+                    etSearchSong.clearFocus();
+                    if (fragMusicSearch.isVisible()) {
+                        fragMusicSearch.performSearch(etSearchSong.getText().toString().trim());
+                    } else {
+                        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                        fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
+                        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                        fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch, MUSICFRAGSERACH);
+                        fragmentTransaction.commit();
 
-               }
-           }else{
-               //Todo: Show dialog that empty search is queried..
-           }
+                    }
+                } else {
+                    initializeSnackBar(getResources().getString(R.string.Enter_a_song_name_to_start_query));
+                }
+            }else{
+                initializeSnackBar(getResources().getString(R.string.functionality_disabled_as_you_are_not_connected_to_a_network));
+            }
 
     }
 

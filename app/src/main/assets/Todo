@@ -7,9 +7,6 @@
 
 2.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
    to check if the user is using the app for the first time)
-3.)Provide a dark background before download links popup
-4.)Issue connectivity check functions on all classes...(if not connected then disable the arccloud
-    and video search funtionality)
 
 ==========================================================================
            /**
@@ -17,17 +14,6 @@
             */
 ===========================================================================
 
-
-7.)Music should be kept on playing in background if not stopped.
-8.) Modifying Layouts:
-     a.) Download Links(Have a check)
-
-0.) /*
-    * NOTE: Firstly save values obtained from cursor in SharedPrefs (List of models could be stored here)
-    * and IF AND ONLY IF the a new song is added..only then hit cursor loader, as it is taking very much
-    * time to load...Everytime...NOT NOTICED AGAIN....if happened again, then SOLVE...
-    */
-    -- It looks fine till now
 
 7.)Change GraceNote Logo and Decrease Image Sizes, Remove any Illegal Content.
 

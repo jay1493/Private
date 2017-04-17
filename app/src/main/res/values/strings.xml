@@ -26,4 +26,6 @@
     <string name="error_occurred_in_fingerprinting">An Error Occurred! Try Again!!</string>
     <string name="no_match_found_of_fingerprinting">Oops! No Match Found Here!</string>
     <string name="download_interupted">Download Interupted</string>
+    <string name="functionality_disabled_as_you_are_not_connected_to_a_network">Functionality disabled as device is not connected to a network.</string>
+    <string name="Enter_a_song_name_to_start_query">Enter a song name to start a query.</string>
 </resources>

@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,6 +12,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.example.anubhav.musicapp.Adapters.SongsListAdapter;
 import com.example.anubhav.musicapp.Constants;
@@ -30,7 +32,7 @@ import java.util.ArrayList;
 public class MainChildSongsFragment extends Fragment {
     private RecyclerView recyclerView;
     private ProgressDialog progressDialog;
-    private Context activityContext;
+    private static Context activityContext;
     private static MainChildSongsFragment fragContext = null;
     private static int position;
     private static int layout;
@@ -103,8 +105,19 @@ public class MainChildSongsFragment extends Fragment {
         void addInPlaylist(SongsModel songsModel,int pos);
     }
     public static void notifyAdapterFromActivity(MusicModel musicModelFromActivity){
-        musicModel = musicModelFromActivity;
-        songsListAdapter.notifyDataSetChanged();
+        if(songsListAdapter!=null) {
+            musicModel = musicModelFromActivity;
+            Handler handler = new Handler(activityContext.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+//                    Toast.makeText(activityContext, "Inside notifyAdapter", Toast.LENGTH_SHORT).show();
+                    songsListAdapter.notifyDataSetChanged();
+                }
+            });
 
+        }else{
+            return;
+        }
     }
 }

@@ -15,6 +15,7 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.example.anubhav.musicapp.Fragments.MainChildSongsFragment;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.Model.SongsModel;
@@ -173,7 +174,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
                 @Override
                 public void run() {
                     progressDialog.dismiss();
-
+                    MainChildSongsFragment.notifyAdapterFromActivity(musicModel);
                 }
             });
 
