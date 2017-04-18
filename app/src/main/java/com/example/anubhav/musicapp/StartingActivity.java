@@ -42,7 +42,9 @@ import java.util.Random;
  */
 
 public class StartingActivity extends BaseActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
-    private static final int READ_MUSIC_REQ_CODE = 0123;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION = 1992;
+    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK = 1993;
     private TextView logoName;
     private ImageView mainLoader,mainImage;
     private List<Integer> images;
@@ -188,12 +190,31 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
 
     private void permissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},READ_MUSIC_REQ_CODE);
+            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+
+            }else  if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION);
+
+
+            }else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK);
+
+
             }else{
                 isLoaderNeedsToLoad();
             }
-        }else {
+            return;
+        }else{
             isLoaderNeedsToLoad();
         }
     }
@@ -202,10 +223,27 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
-            case READ_MUSIC_REQ_CODE:
-                if(grantResults!=null && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+            case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
                     isLoaderNeedsToLoad();
-                }else{
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
+                    isLoaderNeedsToLoad();
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+                    isLoaderNeedsToLoad();
+                } else {
+                    // User refused to grant permission.
                     permissions();
                 }
                 break;

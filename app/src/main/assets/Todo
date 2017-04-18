@@ -4,12 +4,7 @@
                 PRIORITY TASKS IN ORDER
              */
 ================================================================
-
-1.)Provide permissions on StartingActivty
 3.)Notification not getting completed.
-2.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
-   to check if the user is using the app for the first time)
-
 
 ==========================================================================
            /**
@@ -17,6 +12,8 @@
             */
 ===========================================================================
 
+2.)Provide introduction layout when starting the app for the first time by a user....(Make a file and store a key in it
+   to check if the user is using the app for the first time)
 
 7.)Change GraceNote Logo and Decrease Image Sizes, Remove any Illegal Content.
 
