@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.service.notification.StatusBarNotification;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.NotificationCompat;
@@ -831,6 +832,7 @@ public class FragMusicSearch extends Fragment {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            notificationManager.cancelAll();
             if(result.trim().equalsIgnoreCase("M4A")|| result.trim().equalsIgnoreCase("mp3")) {
                 ContentValues contentValues = new ContentValues();
                 contentValues.put(MediaStore.Audio.AudioColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
