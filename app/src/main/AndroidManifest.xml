@@ -49,6 +49,9 @@
           </intent-filter>-->
         </activity>
         <service android:name=".MusicPLayerComponents.MusicService" android:exported="false" android:stopWithTask="true"/>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="49cfc85d0c24eb043be735644f64ec80d03e270d" />
     </application>
 
 </manifest>

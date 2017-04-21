@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+import com.crashlytics.android.Crashlytics;
 import com.example.anubhav.musicapp.Interfaces.ObserverListener;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
@@ -32,6 +33,7 @@ import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.Observers.MySongsObserver;
 import com.google.gson.Gson;
 
+import io.fabric.sdk.android.Fabric;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +69,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
     /*    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
                 Log.e("Error"+Thread.currentThread().getStackTrace()[2],paramThrowable.getLocalizedMessage());
