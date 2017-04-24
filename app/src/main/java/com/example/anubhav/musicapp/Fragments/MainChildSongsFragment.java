@@ -30,7 +30,7 @@ import java.util.ArrayList;
  */
 
 public class MainChildSongsFragment extends Fragment {
-    private RecyclerView recyclerView;
+    private static RecyclerView recyclerView;
     private ProgressDialog progressDialog;
     private static Context activityContext;
     private static MainChildSongsFragment fragContext = null;
@@ -120,4 +120,8 @@ public class MainChildSongsFragment extends Fragment {
             return;
         }
     }
+    public static void scrollRecyclerView(int position){
+        recyclerView.scrollToPosition(position);
+    }
+
 }

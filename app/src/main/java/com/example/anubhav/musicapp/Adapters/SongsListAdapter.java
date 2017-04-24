@@ -3,6 +3,14 @@ package com.example.anubhav.musicapp.Adapters;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -11,6 +19,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.example.anubhav.musicapp.CircleTransformer;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.R;
@@ -51,7 +62,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     public void onBindViewHolder(SongsListAdapter.CustomHolder holder, final int position) {
         Bitmap bitmapFactory = BitmapFactory.decodeFile(songsModel.get(position).getSongAlbumCover());
         if(bitmapFactory!=null && bitmapFactory.getRowBytes()>0) {
-            holder.songImage.setImageBitmap(bitmapFactory);
+            holder.songImage.setImageBitmap(getCircleBitmap(bitmapFactory));
         }else{
             holder.songImage.setImageDrawable(context.getResources().getDrawable(R.drawable.album_placeholder));
         }
@@ -118,5 +129,25 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     }
     public interface SongOptionsDeleteFromPlaylistListener{
         void deleteFromPlaylist(SongsModel songsModel,int pos);
+    }
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+        int size = Math.min(bitmap.getWidth(), bitmap.getHeight());
+        int x = (bitmap.getWidth() - size) / 2;
+        int y = (bitmap.getHeight() - size) / 2;
+        //Create Squared Bitmap
+        Bitmap squared = Bitmap.createBitmap(bitmap, x, y, size, size);
+
+
+        final Bitmap output = Bitmap.createBitmap(size,
+               size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        Paint paint = new Paint();
+        //overlay this canvas with the image, which we made in squared shape.
+        paint.setShader(new BitmapShader(squared, BitmapShader.TileMode.CLAMP, BitmapShader.TileMode.CLAMP));
+        paint.setAntiAlias(true);
+        float r = size / 2f;
+        //Now draw circle from canvas(which would lie inside rectangular area
+        canvas.drawCircle(r, r, r, paint);
+        return output;
     }
 }

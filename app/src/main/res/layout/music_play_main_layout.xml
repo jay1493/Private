@@ -4,6 +4,9 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:weightSum="10"
+    android:clickable="true"
+    android:fitsSystemWindows="false"
     android:background="@color/background_drawable_1">
     <LinearLayout
         android:id="@+id/dragLayout"
@@ -61,6 +64,7 @@
                  android:id="@+id/songAlbumImage_musicLayout"
                  android:layout_width="match_parent"
                  android:layout_height="match_parent"
+                 android:adjustViewBounds="true"
                  android:scaleType="fitXY"
                  app:srcCompat = "@drawable/index"/>
         </LinearLayout>

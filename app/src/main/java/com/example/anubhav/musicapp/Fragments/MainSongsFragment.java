@@ -26,8 +26,8 @@ import java.util.ArrayList;
 public class MainSongsFragment extends android.support.v4.app.Fragment {
 
     private static MainSongsFragment fragContext = null;
-    private ViewPager viewPager;
-    private Context activityContext;
+    private static ViewPager viewPager;
+    private static Context activityContext;
     private MainFragmentsAdapter mainFragmentsAdapter;
     private static MusicModel musicModel;
 
@@ -73,5 +73,17 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
         mainFragmentsAdapter = new MainFragmentsAdapter(getChildFragmentManager(),2,getActivity(),musicModel);
         viewPager.setAdapter(mainFragmentsAdapter);
         return view;
+    }
+    public static void setCurrentViewPagerItem(String item,int scrollPosition){
+        if(item.equalsIgnoreCase(activityContext.getResources().getString(R.string.Songs))){
+            if(viewPager!=null){
+                viewPager.setCurrentItem(0,true);
+                MainChildSongsFragment.scrollRecyclerView(scrollPosition);
+            }
+        }else if(item.equalsIgnoreCase(activityContext.getResources().getString(R.string.Albums))){
+            if(viewPager!=null){
+                viewPager.setCurrentItem(1,true);
+            }
+        }
     }
 }

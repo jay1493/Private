@@ -11,11 +11,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="bottom"
-            app:umanoDragView="@+id/collapsedView"
             app:umanoScrollableView="@+id/playlistList"
             app:umanoOverlay="true"
-            app:umanoPanelHeight="@dimen/d100"
-            app:umanoShadowHeight="4dp"
+            app:umanoPanelHeight="@dimen/d70"
             android:visibility="visible">
             <LinearLayout
                 android:orientation="vertical"
@@ -98,7 +96,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="7"
-                    android:layout_marginBottom="@dimen/d100">
+                    android:layout_marginBottom="@dimen/d70">
 
                     <LinearLayout
                         android:id="@+id/mainLayout"

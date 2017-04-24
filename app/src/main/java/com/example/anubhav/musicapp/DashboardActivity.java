@@ -10,6 +10,10 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
@@ -28,6 +32,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.AppCompatDrawableManager;
@@ -41,6 +46,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -176,7 +183,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     public void run() {
                         if(musicService!=null && seekBar!=null){
                             //680,1729,3726 etc... getMediaPlayerPos return secs in millis..
-                            seekBar.setProgress(musicService.getMediaPlayerPos()/1000);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                seekBar.setProgress(musicService.getMediaPlayerPos()/1000,true);
+                            }else{
+                                seekBar.setProgress(musicService.getMediaPlayerPos()/1000);
+                            }
                         }
                         if(seekbarHandler!=null) {
                             seekbarHandler.postDelayed(this, 1000);
@@ -211,6 +222,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private SharedPreferences currentPlayingSongSharedPrefs;
     private SongsModel currentPlayingSongFromPrefs;
     private boolean contentObserverExecuted;
+    private int searchedMusicPosition = -1;
+    private int previousSongIndex = 1;
+    private ImageView songImageOnScreen;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -349,7 +363,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         slidingLayout.setTouchEnabled(true);
         slidingLayout.setMotionEventSplittingEnabled(true);
         slidingLayout.setEnabled(true);
-        slidingLayout.setDragView(R.id.collapsedView);
+        slidingLayout.setDragView(R.id.dragLayout);
         initExpandedView();
         copyPlaylistList = new ArrayList<>();
     }
@@ -357,6 +371,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void initExpandedView() {
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        songImageOnScreen = (ImageView) findViewById(R.id.albumImage_In_OnScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
         playlistRecyclerView.setLayoutManager(new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false));
         songName.setText(getResources().getString(R.string.Not_Playing));
@@ -583,8 +598,12 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         songArtistName.setText(songModelReceivedFromMusicPLayer.getSongArtist());
         Bitmap albumCover = BitmapFactory.decodeFile(songModelReceivedFromMusicPLayer.getSongAlbumCover());
         if(albumCover!=null && albumCover.getRowBytes() > 0){
+            songImageOnScreen.setImageBitmap(createCircularBitmap(albumCover));
+            songImageOnScreen.setAdjustViewBounds(true);
             songAlbumImage.setImageBitmap(albumCover);
         }else{
+            songImageOnScreen.setImageDrawable(getResources().getDrawable(R.drawable.album_placeholder_copy));
+            songImageOnScreen.setAdjustViewBounds(true);
             songAlbumImage.setImageDrawable(getResources().getDrawable(R.drawable.index));
         }
     }
@@ -764,17 +783,21 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
                     if(currentPlayingSong!=null){
                         SongsModel songsModel = currentPlayingSong;
-                        currentPlayingSong = copyPlaylistList.get(copyPlaylistList.size()-1);
-                        if(copyPlaylistList.contains(currentPlayingSong)) {
-                            copyPlaylistList.remove(currentPlayingSong);
+                        if(copyPlaylistList.size()-(previousSongIndex)<0) {
+                            previousSongIndex = 1;
                         }
-                        inflateMusicLayout(currentPlayingSong);
-                        if(!copyPlaylistList.contains(songsModel)) {
-                            copyPlaylistList.add(songsModel);
-                        }
-                        if(playlistAdapter!=null){
-                            playlistAdapter.notifyDataSetChanged();
-                        }
+                            currentPlayingSong = copyPlaylistList.get(copyPlaylistList.size() - previousSongIndex++);
+                            if (copyPlaylistList.contains(currentPlayingSong)) {
+                                copyPlaylistList.remove(currentPlayingSong);
+                            }
+                            inflateMusicLayout(currentPlayingSong);
+                            if (!copyPlaylistList.contains(songsModel)) {
+                                copyPlaylistList.add(songsModel);
+                            }
+                            if (playlistAdapter != null) {
+                                playlistAdapter.notifyDataSetChanged();
+                            }
+
                     }else{
                         currentPlayingSong = copyPlaylistList.get(copyPlaylistList.size()-1);
                         inflateMusicLayout(currentPlayingSong);
@@ -958,8 +981,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
 
     private void searchSong() {
-            if(connectedToNetwork()) {
-                if (!etSearchSong.getText().toString().trim().equalsIgnoreCase("")) {
+        if(!etSearchSong.getText().toString().trim().equalsIgnoreCase("")){
+            if(searchSongInPrivateLibrary(etSearchSong.getText().toString().trim())){
+                if(searchedMusicPosition != -1){
+                    MainSongsFragment mainSongsFragment = (MainSongsFragment) getSupportFragmentManager().findFragmentByTag(MUSICFRAG);
+                    if(mainSongsFragment!=null && mainSongsFragment.isVisible()){
+                        MainSongsFragment.setCurrentViewPagerItem(getResources().getString(R.string.Songs),searchedMusicPosition);
+                    }
+                }
+
+            }else{
+                if(connectedToNetwork()) {
                     Bundle bundle = new Bundle();
                     bundle.putString(songFetchKey, etSearchSong.getText().toString().trim());
                     FragMusicSearch fragMusicSearch = FragMusicSearch.getInstance(bundle);
@@ -974,14 +1006,29 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         fragmentTransaction.commit();
 
                     }
-                } else {
-                    initializeSnackBar(getResources().getString(R.string.Enter_a_song_name_to_start_query));
+                }else{
+                    initializeSnackBar(getResources().getString(R.string.functionality_disabled_as_you_are_not_connected_to_a_network));
                 }
-            }else{
-                initializeSnackBar(getResources().getString(R.string.functionality_disabled_as_you_are_not_connected_to_a_network));
             }
+        }else{
+            initializeSnackBar(getResources().getString(R.string.Enter_a_song_name_to_start_query));
+        }
+
 
     }
+
+    private boolean searchSongInPrivateLibrary(String query) {
+        if(musicModel!=null && musicModel.getAllSongs()!=null && musicModel.getAllSongs().size()>0){
+            for(SongsModel songsModel: musicModel.getAllSongs()){
+                if(songsModel.getSongTitle().trim().equalsIgnoreCase(query) || songsModel.getSongTitle().contains(query)){
+                    searchedMusicPosition =  musicModel.getAllSongs().indexOf(songsModel);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     @Override
     public void onAttachFragment(Fragment fragment) {
@@ -1310,10 +1357,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
         if(previousState == SlidingUpPanelLayout.PanelState.EXPANDED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
+            Window w = getWindow();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                w.clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                w.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            }
+
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
                 Drawable expandedDrawable = playPause.getDrawable();
                 playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
+                songName.setMaxLines(1);
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.COLLAPSED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()
@@ -1324,8 +1378,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }else{
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
+                songName.setMaxLines(2);
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Window window = getWindow();
+                String dynamicColor = "#181616";
+                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                window.setStatusBarColor(Color.parseColor(dynamicColor));
+            }
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_playback).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()) {
                 if(playlistLayout.getVisibility() == View.VISIBLE){
@@ -1335,6 +1397,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
              }
+            songName.setMaxLines(2);
             }
     }
 
@@ -1396,6 +1459,25 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     public void initializeSnackBar(String str){
         Snackbar snackbar = Snackbar.make(mainDashboardLayout,str,Snackbar.LENGTH_SHORT);
         snackbar.show();
+    }
+    private Bitmap createCircularBitmap(Bitmap bitmap){
+        if(bitmap == null){
+            return null;
+        }
+        int size = Math.min(bitmap.getWidth(),bitmap.getHeight());
+        int x = (bitmap.getWidth()-size)/2;
+        int y = (bitmap.getHeight()-size)/2;
+        Bitmap output = Bitmap.createBitmap(bitmap,x,y,size,size);
+        Bitmap canvasBitmap = Bitmap.createBitmap(size,size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(canvasBitmap);
+        Paint paint = new Paint();
+        //overlay this canvas with the image, which we made in squared shape.
+        paint.setShader(new BitmapShader(output, BitmapShader.TileMode.CLAMP, BitmapShader.TileMode.CLAMP));
+        paint.setAntiAlias(true);
+        float r = size / 2f;
+        //Now draw circle from canvas(which would lie inside rectangular area
+        canvas.drawCircle(r, r, r, paint);
+        return canvasBitmap;
     }
 
 }
