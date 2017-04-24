@@ -8,6 +8,7 @@
         android:id="@+id/songAlbumImage_musicLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:adjustViewBounds="true"
         android:scaleType="fitXY"
         app:srcCompat = "@drawable/index"/>
 </LinearLayout>
