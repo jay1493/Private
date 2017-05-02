@@ -162,7 +162,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
 
 
     private void init() {
-        saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_PRIVATE);
+        saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_MULTI_PROCESS);
         albumModelHashMap = new HashMap<>();
         songsModelArrayList = new ArrayList<>();
         albumModelArrayList = new ArrayList<>();

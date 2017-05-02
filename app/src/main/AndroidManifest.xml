@@ -48,7 +48,8 @@
               <category android:name="android.intent.category.LAUNCHER" />
           </intent-filter>-->
         </activity>
-        <service android:name=".MusicPLayerComponents.MusicService" android:exported="false" android:stopWithTask="true"/>
+        <service android:name=".MusicPLayerComponents.MusicService" android:exported="false" android:stopWithTask="false"/>
+        <service android:name=".MusicPLayerComponents.MusicBackgroundService" android:exported="false" />
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="49cfc85d0c24eb043be735644f64ec80d03e270d" />

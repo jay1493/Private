@@ -34,7 +34,7 @@
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="7.5">
+                android:layout_weight="6.5">
                 <RelativeLayout
                     android:id="@+id/playlist_musicLayout"
                     android:layout_width="match_parent"
@@ -59,27 +59,55 @@
                         </android.support.v7.widget.RecyclerView>
                     </LinearLayout>
                 </RelativeLayout>
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/playbackImage_musicLayout"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
-                    android:padding="@dimen/d24"
-                    android:visibility="visible">
+                    android:visibility="visible"
+                    android:paddingBottom="@dimen/d24">
                     <ImageView
-                        android:id="@+id/songAlbumImage_musicLayout"
+                        android:id="@+id/outerAlbumBlurImage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitXY"
-                        app:srcCompat = "@drawable/index"/>
-                </LinearLayout>
+                        android:scaleType="fitXY"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/d50">
+                        <android.support.percent.PercentFrameLayout
+                            xmlns:android="http://schemas.android.com/apk/res/android"
+                            xmlns:app="http://schemas.android.com/apk/res-auto"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_horizontal|center_vertical">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                app:layout_aspectRatio="50%">
+                                <ImageView
+                                    android:id="@+id/songAlbumImage_musicLayout"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:adjustViewBounds="true"
+                                    android:layout_marginLeft="@dimen/d40"
+                                    android:layout_marginRight="@dimen/d40"
+                                    android:scaleType="fitXY"
+                                    app:srcCompat = "@drawable/index"/>
+                            </LinearLayout>
+                        </android.support.percent.PercentFrameLayout>
+
+                    </LinearLayout>
+
+                </FrameLayout>
             </FrameLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="2.5"
+                android:layout_weight="3.5"
+                android:paddingTop="@dimen/d10"
                 android:orientation="vertical">
                 <android.support.v7.widget.AppCompatSeekBar
                     android:id="@+id/music_seekbar"

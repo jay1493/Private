@@ -4,11 +4,13 @@ import android.app.Service;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.net.rtp.AudioStream;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.provider.MediaStore;
@@ -17,9 +19,13 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.SeekBar;
 
+import com.example.anubhav.musicapp.Constants;
+import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Model.SongsModel;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * Created by anubhav on 30/3/17.
@@ -30,6 +36,9 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private SongsModel songModel = null;
     private MediaPlayer musicPlayer;
     private Context context;
+    private SongsModel currentPlayingSong;
+    private ArrayList<SongsModel> copyPlaylistList;
+    private ServiceConnection serviceConnection;
 
     @Nullable
     @Override
@@ -63,7 +72,13 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             musicPlayer.start();
         }
     }
-
+    public boolean isMediaPlayerRunning(){
+        if(musicPlayer!=null && musicPlayer.isPlaying()){
+            return true;
+        }else{
+            return false;
+        }
+    }
 
     public class MusicServiceBinder extends Binder{
         public MusicService getServiceObjectFromBinder(){
@@ -129,5 +144,38 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         musicPlayer.release();
         return false;
 
+    }
+    public void setCurrentPlayingSong(SongsModel song){
+        currentPlayingSong = song;
+    }
+    public void setCopyPlaylist(ArrayList<SongsModel> copyPlaylist){
+        copyPlaylistList = copyPlaylist;
+    }
+    public void setServiceConnection(ServiceConnection connection){
+        serviceConnection = connection;
+    }
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        if(currentPlayingSong!=null) {
+            Intent startIntent = new Intent(this, MusicBackgroundService.class);
+            startIntent.setAction(Constants.ACTION_STARTFOREGROUND_ACTION);
+            Bundle bundle = new Bundle();
+            bundle.putSerializable(Constants.FORWARD_CURRENT_SONG_TO_BACKGROUND, currentPlayingSong);
+            if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
+                bundle.putSerializable(Constants.FORWARD_COPYPLAYLIST_TO_BACKGROUND, copyPlaylistList);
+            }
+            if(isMediaPlayerRunning()){
+
+                bundle.putInt(Constants.FORWARD_CURRENT_SONG_ACTIVE_POSITION,getMediaPlayerPos());
+                bundle.putBoolean(Constants.FORWARD_CURRENT_SONG_IS_ACTIVE,true);
+            }else{
+                bundle.putInt(Constants.FORWARD_CURRENT_SONG_ACTIVE_POSITION,-1);
+                bundle.putBoolean(Constants.FORWARD_CURRENT_SONG_IS_ACTIVE,false);
+            }
+            startIntent.putExtras(bundle);
+            startService(startIntent);
+        }
+//        unbindService(serviceConnection);
+        stopSelf();
     }
 }

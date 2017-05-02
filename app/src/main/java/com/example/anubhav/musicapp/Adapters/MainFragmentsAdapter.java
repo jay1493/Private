@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
 import com.example.anubhav.musicapp.Constants;
@@ -18,8 +19,8 @@ import java.util.ArrayList;
 /**
  * Created by anubhav on 23/3/17.
  */
-
-public class MainFragmentsAdapter extends FragmentStatePagerAdapter {
+//Todo: Changed due to arraylist.size crash...WTF !!
+public class MainFragmentsAdapter extends FragmentPagerAdapter {
 
     private FragmentManager fragmentManager;
     private int noOfFrags;
