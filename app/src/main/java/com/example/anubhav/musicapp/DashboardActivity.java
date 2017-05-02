@@ -34,8 +34,6 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.graphics.Palette;
@@ -236,6 +234,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private ImageView songImageOnScreen;
     private ImageView albumBlurImage;
     private boolean backgroundServiceActive = false;
+    private IntentFilter intentFilter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -243,6 +242,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         setContentView(R.layout.layout_dashboard);
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
         context = this;
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.BACKGROUND_UPDATE_BROADCAST);
         init();
         setSupportActionBar(toolbar);
         GlideDrawableImageViewTarget imageViewTarget = new GlideDrawableImageViewTarget(videoLoader);
@@ -274,20 +275,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         }else{
             currentPlayingSongFromPrefs = null;
         }
-        if(!TextUtils.isEmpty(getIntent().getAction()) && getIntent().getAction().equalsIgnoreCase(Constants.ACTION_MAIN_ACTION)){
-            Intent intent = getIntent();
-            if(intent.getExtras()!=null) {
-                Intent stopBackground = new Intent(this,MusicBackgroundService.class);
-                stopBackground.setAction(Constants.ACTION_STOPFOREGROUND_ACTION);
-                startService(stopBackground);
-
-                SharedPreferences sharedPreferences = getSharedPreferences(Constants.BACKGROUND_SHARED_PREFS,MODE_MULTI_PROCESS);
-                if(!TextUtils.isEmpty(sharedPreferences.getString(Constants.BACKGROUND_SHARED_PREFS_MODEL,null))){
-                    SongsModel currentPlayingSongFromService = gson.fromJson(sharedPreferences.getString(Constants.BACKGROUND_SHARED_PREFS_MODEL,null),SongsModel.class);
-                    inflateMusicLayoutFromSavedSongsModel(currentPlayingSongFromService,-1);
-                }
-
-            }
+        if(getIntent()!=null && !TextUtils.isEmpty(getIntent().getAction()) && getIntent().getAction().equalsIgnoreCase(Constants.ACTION_MAIN_ACTION)){
+            registerReceiver(customBroadcastReceiver,intentFilter);
+            Intent stopBackground = new Intent(this,MusicBackgroundService.class);
+            stopBackground.setAction(Constants.ACTION_STOPFOREGROUND_ACTION);
+            startService(stopBackground);
         }
         playlistSharedPrefs = getSharedPreferences(Constants.PLAYLIST_SHARED_PREFS,MODE_PRIVATE);
         if(playlistSharedPrefs.getString(Constants.PLAYLIST_FROM_SHARED_PREFS,null) == null){
@@ -329,6 +321,18 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         audioManager.requestAudioFocus(this,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
     }
+
+    private BroadcastReceiver customBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent!=null && intent.getExtras()!=null){
+                Bundle bundle = intent.getExtras();
+                SongsModel song = (SongsModel) bundle.getSerializable(Constants.BACKGROUND_UPDATE_BROADCAST_MODEL);
+                inflateMusicLayoutFromSavedSongsModel(song,-1);
+
+            }
+        }
+    };
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -966,6 +970,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             musicService.setCopyPlaylist(copyPlaylistList);
             musicService.setServiceConnection(serviceConnection);
         }
+        if(getIntent()!=null && !TextUtils.isEmpty(getIntent().getAction()) && getIntent().getAction().equalsIgnoreCase(Constants.ACTION_MAIN_ACTION)) {
+            unregisterReceiver(customBroadcastReceiver);
+        }
     }
 
     @Override
@@ -979,6 +986,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             animationDrawable.start();
         }
         permissions();
+
     }
 
     private void setUpContentObserver() {
@@ -1570,6 +1578,5 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             }
         }
     }
-
 
 }

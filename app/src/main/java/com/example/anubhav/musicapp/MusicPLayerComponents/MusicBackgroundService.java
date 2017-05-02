@@ -7,31 +7,22 @@ import android.app.Service;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import com.example.anubhav.musicapp.Constants;
 import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.R;
-import com.example.anubhav.musicapp.StartingActivity;
-import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -227,11 +218,12 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
                 skipNext();
             } else if (intent.getAction().equals(
                     Constants.ACTION_STOPFOREGROUND_ACTION)) {
-                SharedPreferences sharedPreferences = getSharedPreferences(Constants.BACKGROUND_SHARED_PREFS,MODE_MULTI_PROCESS);
-                Gson gson = new Gson();
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString(Constants.BACKGROUND_SHARED_PREFS_MODEL,gson.toJson(currentSongModel));
-                editor.commit();
+                Intent intent1 = new Intent();
+                intent1.setAction(Constants.BACKGROUND_UPDATE_BROADCAST);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable(Constants.BACKGROUND_UPDATE_BROADCAST_MODEL,currentSongModel);
+                intent1.putExtras(bundle);
+                sendBroadcast(intent1);
                 Log.i("BackgroundMusicService", "Received Stop Foreground Intent");
                 stopForeground(true);
                 stopSelf();

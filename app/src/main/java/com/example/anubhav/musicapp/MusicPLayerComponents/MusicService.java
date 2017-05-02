@@ -8,23 +8,17 @@ import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.net.rtp.AudioStream;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.provider.MediaStore;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
-import android.util.Log;
-import android.widget.SeekBar;
 
 import com.example.anubhav.musicapp.Constants;
-import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Model.SongsModel;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -39,6 +33,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     private SongsModel currentPlayingSong;
     private ArrayList<SongsModel> copyPlaylistList;
     private ServiceConnection serviceConnection;
+
 
     @Nullable
     @Override
@@ -79,6 +74,7 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             return false;
         }
     }
+
 
     public class MusicServiceBinder extends Binder{
         public MusicService getServiceObjectFromBinder(){
@@ -175,7 +171,6 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             startIntent.putExtras(bundle);
             startService(startIntent);
         }
-//        unbindService(serviceConnection);
         stopSelf();
     }
 }
