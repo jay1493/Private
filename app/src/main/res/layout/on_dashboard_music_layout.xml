@@ -38,7 +38,8 @@
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/d24sp"
                     android:maxLines="1"
-                    android:ellipsize="end"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
                     android:textColor="@color/off_white"
                     android:text=""/>
                 <TextView

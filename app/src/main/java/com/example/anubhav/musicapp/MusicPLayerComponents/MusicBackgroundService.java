@@ -4,9 +4,11 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
@@ -17,6 +19,8 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.example.anubhav.musicapp.Constants;
@@ -46,6 +50,8 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
     private SongsModel currentSongFromService;
     private NotificationManager mNotificationManager;
     private int forwardMusic = -1;
+    private boolean pausedFromCall = false;
+    private CustomAudioLoseListener customAudioLoseListener;
 
     @Nullable
     @Override
@@ -59,6 +65,10 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         musicPlayer = new MediaPlayer();
         initMusicPlayer();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("android.intent.action.PHONE_STATE");
+        customAudioLoseListener = new CustomAudioLoseListener();
+        registerReceiver(customAudioLoseListener,intentFilter);
     }
 
     private void initMusicPlayer() {
@@ -176,41 +186,9 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
             } else if (intent.getAction().equals(Constants.ACTION_PLAY_ACTION)) {
                 Log.i("BackgroundMusicService", "Clicked Play");
                 if(musicPlayer.isPlaying()){
-                    musicPlayer.pause();
-                    if(currentSongModel!=null){
-                        largeIcon = BitmapFactory.decodeFile(currentSongModel.getSongAlbumCover());
-                        if(largeIcon!=null && largeIcon.getRowBytes()>0){
-
-                        }else{
-                            largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
-                        }
-                        currentSong = currentSongModel.getSongTitle();
-                    }else{
-                        largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
-                        currentSong = "Now Playing";
-                    }
-                    notifLargeIcon = Bitmap.createScaledBitmap(largeIcon,128,128,false);
-                    notificationBuilder = getPlayNotifBuilder();
-                    notification = notificationBuilder.build();
-                    mNotificationManager.notify(101, notification);
+                    pauseMusicPlayerWithLayout();
                 }else{
-                    musicPlayer.start();
-                    if(currentSongModel!=null){
-                        largeIcon = BitmapFactory.decodeFile(currentSongModel.getSongAlbumCover());
-                        if(largeIcon!=null && largeIcon.getRowBytes()>0){
-
-                        }else{
-                            largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
-                        }
-                        currentSong = currentSongModel.getSongTitle();
-                    }else{
-                        largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
-                        currentSong = "Now Playing";
-                    }
-                    notifLargeIcon = Bitmap.createScaledBitmap(largeIcon,128,128,false);
-                    notificationBuilder = getPauseNotifBuilder();
-                    notification = notificationBuilder.build();
-                    mNotificationManager.notify(101, notification);
+                    playMusicPlayerWithLayout();
                 }
 
             } else if (intent.getAction().equals(Constants.ACTION_NEXT_ACTION)) {
@@ -230,6 +208,46 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
             }
         }
         return START_REDELIVER_INTENT;
+    }
+
+    private void playMusicPlayerWithLayout() {
+        musicPlayer.start();
+        if(currentSongModel!=null){
+            largeIcon = BitmapFactory.decodeFile(currentSongModel.getSongAlbumCover());
+            if(largeIcon!=null && largeIcon.getRowBytes()>0){
+
+            }else{
+                largeIcon = BitmapFactory.decodeResource(getResources(), R.drawable.index);
+            }
+            currentSong = currentSongModel.getSongTitle();
+        }else{
+            largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
+            currentSong = "Now Playing";
+        }
+        notifLargeIcon = Bitmap.createScaledBitmap(largeIcon,128,128,false);
+        notificationBuilder = getPauseNotifBuilder();
+        notification = notificationBuilder.build();
+        mNotificationManager.notify(101, notification);
+    }
+
+    private void pauseMusicPlayerWithLayout() {
+        musicPlayer.pause();
+        if(currentSongModel!=null){
+            largeIcon = BitmapFactory.decodeFile(currentSongModel.getSongAlbumCover());
+            if(largeIcon!=null && largeIcon.getRowBytes()>0){
+
+            }else{
+                largeIcon = BitmapFactory.decodeResource(getResources(), R.drawable.index);
+            }
+            currentSong = currentSongModel.getSongTitle();
+        }else{
+            largeIcon = BitmapFactory.decodeResource(getResources(),R.drawable.index);
+            currentSong = "Now Playing";
+        }
+        notifLargeIcon = Bitmap.createScaledBitmap(largeIcon,128,128,false);
+        notificationBuilder = getPlayNotifBuilder();
+        notification = notificationBuilder.build();
+        mNotificationManager.notify(101, notification);
     }
 
     private void skipPrevious() {
@@ -354,6 +372,48 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
     public void onDestroy() {
         musicPlayer.stop();
         musicPlayer.release();
+        unregisterReceiver(customAudioLoseListener);
         super.onDestroy();
+    }
+    public class CustomAudioLoseListener extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            telephonyManager.listen(new CustomPhoneStateListener(), PhoneStateListener.LISTEN_CALL_STATE);
+        }
+        class CustomPhoneStateListener extends PhoneStateListener {
+            @Override
+            public void onCallStateChanged(int state, String incomingNumber) {
+                try{
+                    switch (state){
+                        case TelephonyManager.CALL_STATE_OFFHOOK:
+                            if(musicPlayer!=null && musicPlayer.isPlaying()){
+                                //PAUSE
+                                pausedFromCall = true;
+                                pauseMusicPlayerWithLayout();
+
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_RINGING:
+                            if(musicPlayer!=null && musicPlayer.isPlaying()){
+                                //PAUSE
+                                pausedFromCall = true;
+                                pauseMusicPlayerWithLayout();
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_IDLE:
+                            if(musicPlayer!=null && !musicPlayer.isPlaying() && pausedFromCall){
+                                //PLAY
+                                pausedFromCall = false;
+                                playMusicPlayerWithLayout();
+                            }
+                            break;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+            }
+        }
     }
 }

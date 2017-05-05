@@ -19,7 +19,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.util.Log;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -43,7 +42,7 @@ import java.util.Random;
  * Created by anubhav on 16/2/17.
  */
 
-public class StartingActivity extends BaseActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
+public class StartingActivity extends BaseActivity implements LoaderManager.LoaderCallbacks<Cursor> {
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION = 1992;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK = 1993;
@@ -65,6 +64,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
     private SharedPreferences saveMusicModelSharedPrefs;
     private MySongsObserver mySongsObserver;
     private boolean contentObserverExecuted;
+    private Handler handlerToForwardIntent;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -89,13 +89,13 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                 backgrounds[1] = end;
                 TransitionDrawable crossfader = new TransitionDrawable(backgrounds);
                 crossfader.setCrossFadeEnabled(true);
-                crossfader.startTransition(10000);
+                crossfader.startTransition(5000);
                 mainImage.setImageDrawable(crossfader);
                 if(running){
-                    handler.postDelayed(this,10000);
+                    handler.postDelayed(this,5000);
                 }
             }
-        },10000);
+        },5000);
         permissions();
         Typeface typeface = Typeface.createFromAsset(getAssets(),"CAC_Champagne.ttf");
         logoName.setTypeface(typeface,Typeface.BOLD_ITALIC);
@@ -118,7 +118,15 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                     //No change is there
                     if(getMusicModel()!=null) {
                         musicModel = getMusicModel();
-                        mainImage.setOnClickListener(StartingActivity.this);
+                        handlerToForwardIntent.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                Intent intent = new Intent(StartingActivity.this,DashboardActivity.class);
+                                intent.putExtra(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
+                                startActivity(intent);
+                                finish();
+                            }
+                        },9000);
                     }else{
                         getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
                     }
@@ -137,7 +145,15 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
             getSupportLoaderManager().initLoader(1, null, this);
         }else{
             musicModel = getMusicModel();
-            mainImage.setOnClickListener(StartingActivity.this);
+            handlerToForwardIntent.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Intent intent = new Intent(StartingActivity.this,DashboardActivity.class);
+                    intent.putExtra(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
+                    startActivity(intent);
+                    finish();
+                }
+            },9000);
             //But check for a change
           /*  setObserverOnActivity(new ObserverListener() {
                 @Override
@@ -174,6 +190,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
         logoName = (TextView)findViewById(R.id.logo_name);
         mainLoader = (ImageView)findViewById(R.id.main_loader);
         mainImage = (ImageView)findViewById(R.id.mainBackImage);
+        handlerToForwardIntent = new Handler();
     }
     private void updateImages(List<Integer> images) {
         int pos = random.nextInt(images.size()-1);
@@ -197,20 +214,23 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                     && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK,Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
 
             }else  if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION);
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.WAKE_LOCK,Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION);
 
 
             }else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK);
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK);
 
 
             }else{
@@ -227,7 +247,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED && grantResults[5] == PackageManager.PERMISSION_GRANTED) {
                     isLoaderNeedsToLoad();
                 } else {
                     // User refused to grant permission.
@@ -235,7 +255,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                 }
                 break;
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
                     isLoaderNeedsToLoad();
                 } else {
                     // User refused to grant permission.
@@ -243,7 +263,7 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
                 }
                 break;
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS_MINUS_LOCATION_AND_WAKE_LOCK:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED) {
                     isLoaderNeedsToLoad();
                 } else {
                     // User refused to grant permission.
@@ -345,7 +365,15 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
               SharedPreferences.Editor editorPrefs = saveMusicModelSharedPrefs.edit();
               editorPrefs.putString(Constants.SHARED_PREFS_SAVED_MODEL,musicJson);
               editorPrefs.apply();
-              mainImage.setOnClickListener(StartingActivity.this);
+              handlerToForwardIntent.postDelayed(new Runnable() {
+                  @Override
+                  public void run() {
+                      Intent intent = new Intent(StartingActivity.this,DashboardActivity.class);
+                      intent.putExtra(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
+                      startActivity(intent);
+                      finish();
+                  }
+              },9000);
           }
     }
 
@@ -355,15 +383,4 @@ public class StartingActivity extends BaseActivity implements View.OnClickListen
         songsModelArrayList = new ArrayList<>();
     }
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()){
-            case R.id.mainBackImage:
-                Intent intent = new Intent(StartingActivity.this,DashboardActivity.class);
-                intent.putExtra(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
-                startActivity(intent);
-                finish();
-                break;
-        }
-    }
 }

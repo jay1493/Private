@@ -41,6 +41,8 @@ import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -126,28 +128,29 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private final int Manifest_permission_RECORD_AUDIO = 1994;
     private final int Manifest_permission_LOCATION = 1995;
     private final int Manifest_permission_WAKE_LOCK =1996;
+    private final int Manifest_permission_READ_PHONE_STATE = 1997;
     //    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private static final String 		appString				= Constants.APP_NAME;
-    private boolean activityCreatedForFirstTime = true;
 
+    private boolean activityCreatedForFirstTime = true;
     private AssetFileDescriptor videoLoadingFromAssets;
+
     /**
      *  Params of Audio FingerPrint
      */
     private ACRCloudClient mClient;
 
     private ACRCloudConfig mConfig;
-
     private TextView mVolume, mResult, tv_time;
+
     private boolean mProcessing = false;
-
     private boolean initState = false;
-    private String path = "";
 
+    private String path = "";
     private AudioVisualize audioVisualize;
     private long startTime = 0;
-    private long stopTime = 0;
 
+    private long stopTime = 0;
     static{
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
@@ -155,12 +158,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private LinearLayout fragmentLayout,albumSearchLayout;
     private MusicModel musicModel;
     private MySongsObserver mySongsObserver;
-    private SongsModel songModelReceivedFromMusicPLayer;
-
     /**
      *
      * @MusicPlayer params
      */
+    private SongsModel songModelReceivedFromMusicPLayer;
     private TextView songName,songArtistName,currentTimer,selectedSongName, selectedSongArtistName;
     private ImageView playlist_Or_pauseButton,songAlbumImage,playPause,selectedSongAlbumImage,selectedSongOptions;
     private FrameLayout albumImageLayout;
@@ -235,6 +237,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private ImageView albumBlurImage;
     private boolean backgroundServiceActive = false;
     private IntentFilter intentFilter;
+    private boolean pausedFromCall = false;
+    private CustomAudioLoseListener customAudioLoseListener;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -320,6 +324,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         setUpContentObserver();
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         audioManager.requestAudioFocus(this,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("android.intent.action.PHONE_STATE");
+        customAudioLoseListener = new CustomAudioLoseListener();
+        registerReceiver(customAudioLoseListener,intentFilter);
     }
 
     private BroadcastReceiver customBroadcastReceiver = new BroadcastReceiver() {
@@ -413,6 +421,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void initExpandedView() {
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        songName.setSelected(true);
         songImageOnScreen = (ImageView) findViewById(R.id.albumImage_In_OnScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
         playlistRecyclerView.setLayoutManager(new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false));
@@ -1110,14 +1119,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
                     && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK,Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
 
             } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
                     || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
                     || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED) {
+                    || context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED) {
                 if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
                 }
@@ -1133,6 +1144,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }
                 if(context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!=PackageManager.PERMISSION_GRANTED){
                     requestPermissions(new String[]{Manifest.permission.WAKE_LOCK},Manifest_permission_WAKE_LOCK);
+                }
+                if(context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},Manifest_permission_READ_PHONE_STATE);
                 }
                 setUpInitialHomeFragment();
             }
@@ -1156,7 +1170,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode){
             case Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED && grantResults[3] == PackageManager.PERMISSION_GRANTED && grantResults[4] == PackageManager.PERMISSION_GRANTED && grantResults[5] == PackageManager.PERMISSION_GRANTED) {
                     setUpInitialHomeFragment();
                 } else {
                     // User refused to grant permission.
@@ -1195,6 +1209,14 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }
                 break;
             case Manifest_permission_WAKE_LOCK:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    // User refused to grant permission.
+                    permissions();
+                }
+                break;
+            case Manifest_permission_READ_PHONE_STATE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
@@ -1369,6 +1391,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 //            stopService(musicServiceIntent);
             musicService = null;
         }
+        unregisterReceiver(customAudioLoseListener);
         super.onDestroy();
 
     }
@@ -1575,6 +1598,52 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 currentProgress = musicService.getMediaPlayerPos();
                 musicService.pauseMediaPlayer();
                 playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+            }
+        }
+    }
+
+
+    public class CustomAudioLoseListener extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            telephonyManager.listen(new CustomAudioLoseListener.CustomPhoneStateListener(), PhoneStateListener.LISTEN_CALL_STATE);
+        }
+        class CustomPhoneStateListener extends PhoneStateListener {
+            @Override
+            public void onCallStateChanged(int state, String incomingNumber) {
+                try{
+                    switch (state){
+                        case TelephonyManager.CALL_STATE_OFFHOOK:
+                            if(musicService!=null && musicService.isMediaPlayerRunning()){
+                                //PAUSE
+                                pausedFromCall = true;
+                                musicService.pauseMediaPlayer();
+                                playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_RINGING:
+                            if(musicService!=null && musicService.isMediaPlayerRunning()){
+                                //PAUSE
+                                pausedFromCall = true;
+                                musicService.pauseMediaPlayer();
+                                playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_playback));
+                            }
+                            break;
+                        case TelephonyManager.CALL_STATE_IDLE:
+                            if(musicService!=null && musicService.isMediaPlayerRunning() && pausedFromCall){
+                                //PLAY
+                                pausedFromCall = false;
+                                musicService.resumePlayback();
+                                playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                            }
+                            break;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
             }
         }
     }
