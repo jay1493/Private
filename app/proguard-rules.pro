@@ -254,7 +254,13 @@
 -keep public class org.jsoup.** {
 public *;
 }
+-keep class com.example.anubhav.musicapp.Model.SongsModel {
+*;
+}
 -keep class com.fasterxml.jackson.** { *; }
+-keep class com.wooplr.spotlight.** { *; }
+-keep interface com.wooplr.spotlight.**
+-keep enum com.wooplr.spotlight.**
 
 -dontwarn com.squareup.okhttp.**
 -dontwarn com.fasterxml.jackson.databind.**

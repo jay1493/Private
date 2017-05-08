@@ -359,9 +359,9 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        Log.e("BackgroundService", "onCompletion:1 " +mp.getCurrentPosition());
+       /* Log.e("BackgroundService", "onCompletion:1 " +mp.getCurrentPosition());
         Log.e("BackgroundService", "onCompletion:2 " +mp.getDuration());
-        Log.e("BackgroundService", "onCompletion:3 " +currentSongModel.getSongDuration());
+        Log.e("BackgroundService", "onCompletion:3 " +currentSongModel.getSongDuration());*/
         if(Integer.parseInt(currentSongModel.getSongDuration()) == mp.getCurrentPosition()){
           //Change Song
             skipNext();

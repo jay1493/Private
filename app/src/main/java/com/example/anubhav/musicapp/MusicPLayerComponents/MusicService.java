@@ -153,23 +153,20 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         if(currentPlayingSong!=null) {
-            Intent startIntent = new Intent(this, MusicBackgroundService.class);
-            startIntent.setAction(Constants.ACTION_STARTFOREGROUND_ACTION);
-            Bundle bundle = new Bundle();
-            bundle.putSerializable(Constants.FORWARD_CURRENT_SONG_TO_BACKGROUND, currentPlayingSong);
-            if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
-                bundle.putSerializable(Constants.FORWARD_COPYPLAYLIST_TO_BACKGROUND, copyPlaylistList);
-            }
-            if(isMediaPlayerRunning()){
 
+            if(isMediaPlayerRunning()){
+                Intent startIntent = new Intent(this, MusicBackgroundService.class);
+                startIntent.setAction(Constants.ACTION_STARTFOREGROUND_ACTION);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable(Constants.FORWARD_CURRENT_SONG_TO_BACKGROUND, currentPlayingSong);
+                if (copyPlaylistList != null && copyPlaylistList.size() > 0) {
+                    bundle.putSerializable(Constants.FORWARD_COPYPLAYLIST_TO_BACKGROUND, copyPlaylistList);
+                }
                 bundle.putInt(Constants.FORWARD_CURRENT_SONG_ACTIVE_POSITION,getMediaPlayerPos());
                 bundle.putBoolean(Constants.FORWARD_CURRENT_SONG_IS_ACTIVE,true);
-            }else{
-                bundle.putInt(Constants.FORWARD_CURRENT_SONG_ACTIVE_POSITION,-1);
-                bundle.putBoolean(Constants.FORWARD_CURRENT_SONG_IS_ACTIVE,false);
+                startIntent.putExtras(bundle);
+                startService(startIntent);
             }
-            startIntent.putExtras(bundle);
-            startService(startIntent);
         }
         stopSelf();
     }
