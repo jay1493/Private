@@ -1499,12 +1499,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
         if(previousState == SlidingUpPanelLayout.PanelState.EXPANDED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
+
+          /*// TODO: 9/5/17 : Commented the status bar tranceparancy code, as we have put static transclucent status bar now..
             Window w = getWindow();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 w.clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
                 w.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             }
-//noinspection RestrictedApi
+            ===============================*/
+
+            //noinspection RestrictedApi
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
                 Drawable expandedDrawable = playPause.getDrawable();
@@ -1524,13 +1528,18 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 songName.setMaxLines(2);
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
+
+                /*TODO: 9/5/17 : Commented the status bar tranceparancy code, as we have put static transclucent status bar now..
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 Window window = getWindow();
                 String dynamicColor = "#181616";
                 window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
                 window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
                 window.setStatusBarColor(Color.parseColor(dynamicColor));
-            }
+                }
+                ===================================================*/
+
             //noinspection RestrictedApi
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()) {
