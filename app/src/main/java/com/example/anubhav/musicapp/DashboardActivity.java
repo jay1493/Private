@@ -247,6 +247,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private boolean pausedFromCall = false;
     private CustomAudioLoseListener customAudioLoseListener;
     private boolean isRevealEnabled = false;
+    private ImageView videoPlaceHolder;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -438,6 +439,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         listenSong = (ImageView) findViewById(R.id.listenSong);
         toolbar = (Toolbar)findViewById(R.id.toolbar_dashboard);
         videoLoader = (ImageView)findViewById(R.id.videoLoader);
+        videoPlaceHolder = (ImageView) findViewById(R.id.videoPlaceHolder);
         etSearchSong = (EditText)findViewById(R.id.et_searchSong);
         mainLayout = (LinearLayout)findViewById(R.id.mainLayout);
         fragmentLayout = (LinearLayout)findViewById(R.id.fragmentView);
@@ -456,6 +458,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void initExpandedView() {
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        songName.setMarqueeRepeatLimit(-1);
         songName.setSelected(true);
         songImageOnScreen = (ImageView) findViewById(R.id.albumImage_In_OnScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
@@ -496,6 +499,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 @Override
                 public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
                     Toast.makeText(DashboardActivity.this, "Unable to play video", Toast.LENGTH_SHORT).show();
+                    videoPlaceHolder.setVisibility(View.VISIBLE);
                     return false;
                 }
             });
@@ -504,6 +508,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 public void onCompletion(MediaPlayer mp) {
                     if(videoLoader!=null && videoLoader.getVisibility() == View.VISIBLE){
                         videoLoader.setVisibility(View.GONE);
+                        videoPlaceHolder.setVisibility(View.GONE);
                     }
                 }
             });
@@ -617,12 +622,16 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             songModelReceivedFromMusicPLayer = songsModel;
             currentPlayingSong = songModelReceivedFromMusicPLayer;
             setUpValuesFromSongModel();
-            initialDurationOfSongInSecs = (Integer.parseInt(songModelReceivedFromMusicPLayer.getSongDuration()))/1000;
-            try {
-                initialDurationOfSongInMins = Float.parseFloat(decimalFormat.format(initialDurationOfSongInSecs/60));
-                currentTimer.setText(String.valueOf(decimalFormat.format(initialDurationOfSongInMins)));
-            } catch (Exception e) {
-                e.printStackTrace();
+            if(!TextUtils.isEmpty(songModelReceivedFromMusicPLayer.getSongDuration())) {
+                initialDurationOfSongInSecs = (Integer.parseInt(songModelReceivedFromMusicPLayer.getSongDuration())) / 1000;
+                try {
+                    initialDurationOfSongInMins = Float.parseFloat(decimalFormat.format(initialDurationOfSongInSecs / 60));
+                    currentTimer.setText(String.valueOf(decimalFormat.format(initialDurationOfSongInMins)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }else{
+                initialDurationOfSongInSecs = 0;
             }
             if(seekBar!=null){
                 seekBar.setEnabled(true);
@@ -722,6 +731,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             initializeMediaPlayer(surfaceHolder);
             if (videoLoader.getVisibility() == View.GONE) {
                 videoLoader.setVisibility(View.VISIBLE);
+                videoPlaceHolder.setVisibility(View.VISIBLE);
             }
         }
     }
@@ -740,6 +750,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
+        videoPlaceHolder.setVisibility(View.GONE);
         videoView.requestFocus();
         mediaPlayer.start();
         videoLoader.setVisibility(View.GONE);

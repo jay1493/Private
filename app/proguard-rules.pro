@@ -257,6 +257,9 @@ public *;
 -keep class com.example.anubhav.musicapp.Model.SongsModel {
 *;
 }
+-keep class com.example.anubhav.musicapp.Model.MusicModel {
+*;
+}
 -keep class com.fasterxml.jackson.** { *; }
 -keep class com.wooplr.spotlight.** { *; }
 -keep interface com.wooplr.spotlight.**

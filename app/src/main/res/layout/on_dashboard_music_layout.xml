@@ -39,7 +39,10 @@
                     android:textSize="@dimen/d24sp"
                     android:maxLines="1"
                     android:ellipsize="marquee"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
                     android:marqueeRepeatLimit="marquee_forever"
+                    android:scrollHorizontally="true"
                     android:textColor="@color/off_white"
                     android:text=""/>
                 <TextView

@@ -44,7 +44,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_MULTI_PROCESS);
+        saveMusicModelSharedPrefs = getSharedPreferences(Constants.SHARED_PREFS_NAME,MODE_PRIVATE);
         String musicJson = saveMusicModelSharedPrefs.getString(Constants.SHARED_PREFS_SAVED_MODEL,null);
         if(musicJson!=null){
             Log.e("", "onCreate: In Base Activity (where musicJson!=null)");

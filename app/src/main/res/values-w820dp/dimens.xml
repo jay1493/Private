@@ -10,6 +10,7 @@
     <dimen name="d40">50dp</dimen>
     <dimen name="d50">60dp</dimen>
     <dimen name="d70">80dp</dimen>
+    <dimen name="d80">90dp</dimen>
     <dimen name="d90">100dp</dimen>
     <dimen name="d100">110dp</dimen>
     <dimen name="d110">120dp</dimen>
