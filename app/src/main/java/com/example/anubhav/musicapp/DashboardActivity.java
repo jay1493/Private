@@ -512,6 +512,18 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     }
                 }
             });
+            mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
+                @Override
+                public void onBufferingUpdate(MediaPlayer mp, int percent) {
+                    if(percent < 100){
+                        Log.d("Muziek", "onBufferingUpdate:");
+                        if (videoLoader.getVisibility() == View.GONE) {
+                            videoLoader.setVisibility(View.VISIBLE);
+                            videoPlaceHolder.setVisibility(View.VISIBLE);
+                        }
+                    }
+                }
+            });
             mediaPlayer.setLooping(true);
             mediaPlayer.prepareAsync();
 
@@ -733,6 +745,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 videoLoader.setVisibility(View.VISIBLE);
                 videoPlaceHolder.setVisibility(View.VISIBLE);
             }
+            Log.d("Muziek", "SurfaceCreated:");
+        }else{
+            videoPlaceHolder.setVisibility(View.VISIBLE);
+            Log.d("Muziek", "SurfaceCreated: SurfaceHolder = null");
         }
     }
 
@@ -743,13 +759,21 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        Log.d("Muziek", "Destroyed");
         surfaceHolder.removeCallback(this);
         surfaceHolder = null;
-        mediaPlayer = null;
+        if(mediaPlayer!=null) {
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+        videoPlaceHolder.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
+        Log.d("Muziek", "Prepared");
         videoPlaceHolder.setVisibility(View.GONE);
         videoView.requestFocus();
         mediaPlayer.start();
@@ -983,6 +1007,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             surfaceHolder.removeCallback(this);
             surfaceHolder = null;
             mediaPlayer.stop();
+            mediaPlayer.reset();
             mediaPlayer.release();
             mediaPlayer=null;
 
@@ -997,6 +1022,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             surfaceHolder.removeCallback(this);
             surfaceHolder = null;
             mediaPlayer.stop();
+            mediaPlayer.reset();
             mediaPlayer.release();
             mediaPlayer=null;
 
@@ -1050,6 +1076,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             animationDrawable.start();
         }
         permissions();
+        videoPlaceHolder.setVisibility(View.VISIBLE);
 
     }
 
