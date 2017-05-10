@@ -888,6 +888,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         resetAlbumSearchLayout(true);
                         stopFingerprinting();
                         cancel();
+                        albumSearchLayout.removeAllViews();
                         listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
 
                     }
@@ -1399,7 +1400,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             albumParams.height = 0;
             albumParams.weight = 3.0f;
         }else{
-            albumParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+//            albumParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            albumParams.height = 0;
+            albumParams.weight = 0f;
+
         }
         albumSearchLayout.setLayoutParams(albumParams);
         LinearLayout.LayoutParams fragmentLayoutLayoutParams = (LinearLayout.LayoutParams) fragmentLayout.getLayoutParams();
@@ -1408,6 +1412,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             fragmentLayoutLayoutParams.weight = 4.0f;
         }else{
             fragmentLayoutLayoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            fragmentLayoutLayoutParams.weight = 7.0f;
         }
         fragmentLayout.setLayoutParams(fragmentLayoutLayoutParams);
         albumSearchLayout.removeAllViews();
@@ -1419,9 +1424,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             if(mediaPlayer!=null){
                 mediaPlayer.setVolume(0f,0f);
             }
-            albumSearchLayout.removeAllViews();
+            resetAlbumSearchLayout(true);
             stopFingerprinting();
             cancel();
+            albumSearchLayout.removeAllViews();
             listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
         }
 

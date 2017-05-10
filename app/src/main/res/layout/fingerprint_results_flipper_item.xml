@@ -13,7 +13,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="@dimen/d50">
+            android:padding="@dimen/d24">
             <ImageView
                 android:id="@+id/imageFlipperItem"
                 android:layout_width="match_parent"
@@ -31,6 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center_horizontal"
+                android:padding="@dimen/d24"
                 android:text=""
                 android:textColor="@color/off_white"/>
         </LinearLayout>

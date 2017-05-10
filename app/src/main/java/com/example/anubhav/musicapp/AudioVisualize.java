@@ -2,6 +2,7 @@ package com.example.anubhav.musicapp;
 
 import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,7 +54,7 @@ public class AudioVisualize {
         logoWidth = logoDrawable.getBitmap().getWidth()*minScaleFactor;
 
         mainContainer = (LinearLayout) view.findViewById(R.id.mainVisualizeContainer);
-        mainContainer.setMinimumHeight((int) (mainImageHeight*maxScaleFactor +20));
+        mainContainer.setMinimumHeight((int) (mainImageHeight*maxScaleFactor +50));
 
     }
     public void changeVisualization(boolean showLayout,float volume){
@@ -76,6 +77,7 @@ public class AudioVisualize {
             parentLayout.addView(view,0);
         }else{
             parentLayout.removeView(view);
+            Log.e("AudioVisualize", "changeVisualization: RemovedView");
         }
         rootLayout.postInvalidate();
     }
