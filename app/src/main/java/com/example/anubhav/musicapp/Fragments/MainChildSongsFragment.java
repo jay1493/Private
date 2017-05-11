@@ -87,7 +87,7 @@ public class MainChildSongsFragment extends Fragment {
                 public void addInPlaylist(SongsModel songsModel, int pos) {
                    songAddToPlaylistListener.addInPlaylist(songsModel,pos);
                 }
-            },null);
+            },null,false);
             recyclerView.setAdapter(songsListAdapter);
         }
         return view;

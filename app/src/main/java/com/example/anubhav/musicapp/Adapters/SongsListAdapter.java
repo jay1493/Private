@@ -11,12 +11,14 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -39,10 +41,11 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
     private boolean showPlaylistLayout;
     private SongOptionsToAddInPlaylistListener songOptionsToAddInPlaylistListener;
     private SongOptionsDeleteFromPlaylistListener songOptionsDeleteFromPlaylistListener;
+    private boolean fromAlbumLayout;
 
     public SongsListAdapter(Context context, List<SongsModel> songsModel, ItemClickListener itemClickListener,
                             boolean showPlaylistLayout, SongOptionsToAddInPlaylistListener songOptionsToAddInPlaylistListener,
-                            SongOptionsDeleteFromPlaylistListener songOptionsDeleteFromPlaylistListener) {
+                            SongOptionsDeleteFromPlaylistListener songOptionsDeleteFromPlaylistListener, boolean fromAlbumClickedLayout) {
 
         this.context = context;
         this.songsModel = songsModel;
@@ -50,6 +53,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         this.showPlaylistLayout = showPlaylistLayout;
         this.songOptionsToAddInPlaylistListener = songOptionsToAddInPlaylistListener;
         this.songOptionsDeleteFromPlaylistListener = songOptionsDeleteFromPlaylistListener;
+        this.fromAlbumLayout = fromAlbumClickedLayout;
     }
 
     @Override
@@ -60,6 +64,13 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
 
     @Override
     public void onBindViewHolder(SongsListAdapter.CustomHolder holder, final int position) {
+        if(fromAlbumLayout){
+            holder.parentLayout.setBackgroundColor(context.getResources().getColor(R.color.background_drawable_3));
+            holder.parentLayout.setAlpha(0.7f);
+            holder.songTitle.setTextSize(context.getResources().getDimension(R.dimen.d10sp));
+            holder.songTitle.setTypeface(holder.songTitle.getTypeface(), Typeface.BOLD);
+            holder.songArtistTitle.setTypeface(holder.songArtistTitle.getTypeface(), Typeface.BOLD_ITALIC);
+        }
         Bitmap bitmapFactory = BitmapFactory.decodeFile(songsModel.get(position).getSongAlbumCover());
         if(bitmapFactory!=null && bitmapFactory.getRowBytes()>0) {
             holder.songImage.setImageBitmap(getCircleBitmap(bitmapFactory));
@@ -69,6 +80,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         holder.songTitle.setText(songsModel.get(position).getSongTitle());
         holder.songArtistTitle.setText(songsModel.get(position).getSongArtist());
         if(showPlaylistLayout){
+            //noinspection RestrictedApi
             if(holder.songOptions.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.library_add).getConstantState()){
                 holder.songOptions.setImageDrawable(context.getResources().getDrawable(R.drawable.arrange_songs_in_playlist));
             }
@@ -109,8 +121,10 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         private ImageView songOptions;
         private TextView songTitle;
         private TextView songArtistTitle;
+        private RelativeLayout parentLayout;
         public CustomHolder(View itemView) {
             super(itemView);
+            parentLayout = (RelativeLayout)itemView.findViewById(R.id.mainLayoutItemSongs);
             songImage = (ImageView)itemView.findViewById(R.id.songImage_list_of_songs);
             songOptions = (ImageView)itemView.findViewById(R.id.songOptions);
             songTitle = (TextView)itemView.findViewById(R.id.songName_list_of_songs);

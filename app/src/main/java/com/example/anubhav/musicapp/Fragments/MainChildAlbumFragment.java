@@ -2,6 +2,8 @@ package com.example.anubhav.musicapp.Fragments;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -9,6 +11,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +30,8 @@ import com.example.anubhav.musicapp.R;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import jp.wasabeef.blurry.Blurry;
 
 /**
  * Created by anubhav on 23/3/17.
@@ -51,6 +56,7 @@ public class MainChildAlbumFragment extends Fragment {
     private MainChildSongsFragment.SongClickListener songClickListener;
     private MainChildSongsFragment.SongAddToPlaylistListener songAddToPlaylistListener;
     private TextView albumArtistName;
+    private ImageView overlayImage;
 
     @Override
     public void onAttach(Context context) {
@@ -111,6 +117,19 @@ public class MainChildAlbumFragment extends Fragment {
                     albumName.setText(musicModel.getAllAlbums().get(position).getAlbumTitle());
                     albumArtistName.setText(musicModel.getAllAlbums().get(position).getArtistTitle());
                     albumSongsRecycler = (RecyclerView)albumSongsView.findViewById(R.id.albumSongsRecycler);
+                    overlayImage = (ImageView)albumSongsView.findViewById(R.id.overlayImage);
+                    String albumImage = musicModel.getAllAlbums().get(position).getAlbumCover();
+                    Bitmap indexBitmap  = BitmapFactory.decodeResource(activityContext.getResources(),R.drawable.main3);
+                    if(!TextUtils.isEmpty(albumImage)){
+                        Bitmap bitmap = BitmapFactory.decodeFile(albumImage);
+                        if(bitmap!=null && bitmap.getRowBytes() > 0){
+                            Blurry.with(activityContext).radius(5).sampling(2).animate(500).from(bitmap).into(overlayImage);
+                        }else{
+                            Blurry.with(activityContext).radius(10).sampling(8).animate(500).from(indexBitmap).into(overlayImage);
+                        }
+                    }else{
+                        Blurry.with(activityContext).radius(10).sampling(8).animate(500).from(indexBitmap).into(overlayImage);
+                    }
                     albumSongsRecycler.setLayoutManager(new LinearLayoutManager(getParentFragment().getActivity(),LinearLayoutManager.VERTICAL,false));
                         songsListAdapter = new SongsListAdapter(getParentFragment().getActivity(), musicModel.getAllAlbums().get(position).getSongs(), new ItemClickListener() {
                             @Override
@@ -122,7 +141,7 @@ public class MainChildAlbumFragment extends Fragment {
                             public void addInPlaylist(SongsModel songsModel, int pos) {
                     songAddToPlaylistListener.addInPlaylist(songsModel,pos);
                             }
-                        },null);
+                        },null,true);
                     albumSongsRecycler.setAdapter(songsListAdapter);
                     albumSongsLayout.addView(albumSongsView);
                     albumSongsLayout.setVisibility(View.VISIBLE);

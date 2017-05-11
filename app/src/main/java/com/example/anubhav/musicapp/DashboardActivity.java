@@ -713,7 +713,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             songImageOnScreen.setAdjustViewBounds(true);
             songAlbumImage.setImageBitmap(albumCover);
 //            processBitmapGradient(albumCover);
-            Blurry.with(context).radius(10).sampling(2).animate().from(albumCover).into(albumBlurImage);
+            Blurry.with(context).radius(10).sampling(8).animate(500).from(albumCover).into(albumBlurImage);
         }else{
             songImageOnScreen.setImageDrawable(getResources().getDrawable(R.drawable.album_placeholder_copy));
             songImageOnScreen.setAdjustViewBounds(true);
@@ -843,7 +843,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                                 }
                                 playlistAdapter.notifyDataSetChanged();
                             }
-                        }, true, null, this);
+                        }, true, null, this,false);
                         playlistRecyclerView.setAdapter(playlistAdapter);
                         playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
                     }

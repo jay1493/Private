@@ -43,7 +43,7 @@ public class AlbumsListAdapter extends RecyclerView.Adapter<AlbumsListAdapter.Cu
         if(bitmapFactory!=null && bitmapFactory.getRowBytes()>0) {
             holder.albumImage.setImageBitmap(bitmapFactory);
         }else{
-            holder.albumImage.setImageDrawable(context.getResources().getDrawable(R.drawable.album_placeholder));
+            holder.albumImage.setImageDrawable(context.getResources().getDrawable(R.drawable.index));
         }
         holder.albumTitle.setText(albumModel.get(position).getAlbumTitle());
         holder.artistTitle.setText(albumModel.get(position).getArtistTitle());
