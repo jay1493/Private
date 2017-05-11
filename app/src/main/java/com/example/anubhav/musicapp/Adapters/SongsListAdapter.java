@@ -14,6 +14,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,7 +68,10 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         if(fromAlbumLayout){
             holder.parentLayout.setBackgroundColor(context.getResources().getColor(R.color.background_drawable_3));
             holder.parentLayout.setAlpha(0.7f);
-            holder.songTitle.setTextSize(context.getResources().getDimension(R.dimen.d10sp));
+            holder.songTitle.setSingleLine(true);
+            holder.songTitle.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+            holder.songTitle.setMarqueeRepeatLimit(-1);
+            holder.songTitle.setSelected(true);
             holder.songTitle.setTypeface(holder.songTitle.getTypeface(), Typeface.BOLD);
             holder.songArtistTitle.setTypeface(holder.songArtistTitle.getTypeface(), Typeface.BOLD_ITALIC);
         }
