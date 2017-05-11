@@ -18,7 +18,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
-import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -125,7 +124,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private LinearLayout mainLayout;
     private MainSongsFragment mainSongFragment;
     private FragmentManager fragmentManager;
-    private AnimationDrawable animationDrawable;
     private ImageView searchSong,listenSong;
     private Context context;
     private FrameLayout mainDashboardLayout;
@@ -261,9 +259,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         setSupportActionBar(toolbar);
         GlideDrawableImageViewTarget imageViewTarget = new GlideDrawableImageViewTarget(videoLoader);
         Glide.with(this).load(R.raw.ripple1).into(imageViewTarget);
-        mainLayout.setBackgroundResource(R.drawable.background_dashboard);
+     /*   mainLayout.setBackgroundResource(R.drawable.background_dashboard);
         animationDrawable = (AnimationDrawable)mainLayout.getBackground();
-        animationDrawable.start();
+        animationDrawable.start();*/
         etSearchSong.setOnClickListener(this);
         searchSong.setOnClickListener(this);
         etSearchSong.setOnEditorActionListener(this);
@@ -458,7 +456,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void initExpandedView() {
         dragLayout = (LinearLayout) findViewById(R.id.dragLayout);
         songName = (TextView) findViewById(R.id.songName_In_onScreen_Layout);
+        songName.setEllipsize(TextUtils.TruncateAt.MARQUEE);
         songName.setMarqueeRepeatLimit(-1);
+        songName.setClickable(true);
         songName.setSelected(true);
         songImageOnScreen = (ImageView) findViewById(R.id.albumImage_In_OnScreen_Layout);
         playlistRecyclerView = (RecyclerView) findViewById(R.id.playlistList);
@@ -1027,9 +1027,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             mediaPlayer=null;
 
         }
-        if(animationDrawable.isRunning()){
-            animationDrawable.stop();
-        }
         String playlist = gson.toJson(playlistModel);
         if(currentPlayingSong!=null){
             String currentPlayingSongToSave = gson.toJson(currentPlayingSong);
@@ -1071,10 +1068,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         videoView = (SurfaceView) findViewById(R.id.video);
         surfaceHolder = videoView.getHolder();
         surfaceHolder.addCallback(this);
-
-        if(!animationDrawable.isRunning()){
-            animationDrawable.start();
-        }
         permissions();
         videoPlaceHolder.setVisibility(View.VISIBLE);
 
@@ -1551,13 +1544,13 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 w.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
             }
             ===============================*/
-
+            //Todo: Below commented line is used to tell Lint to skip inspection of its below line:
             //noinspection RestrictedApi
             if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()
                     || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
                 Drawable expandedDrawable = playPause.getDrawable();
                 playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
-                songName.setMaxLines(1);
+
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.COLLAPSED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
             //noinspection RestrictedApi
@@ -1569,7 +1562,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }else{
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
-                songName.setMaxLines(2);
+
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
 
@@ -1594,8 +1587,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
              }
-            songName.setMaxLines(2);
-            }
+        }
     }
 
 
