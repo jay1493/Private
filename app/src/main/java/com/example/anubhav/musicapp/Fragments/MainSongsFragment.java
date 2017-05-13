@@ -3,6 +3,7 @@ package com.example.anubhav.musicapp.Fragments;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.view.PagerTabStrip;
 import android.support.v4.view.ViewPager;
@@ -28,7 +29,7 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
     private static MainSongsFragment fragContext = null;
     private static ViewPager viewPager;
     private static Context activityContext;
-    private MainFragmentsAdapter mainFragmentsAdapter;
+    private static MainFragmentsAdapter mainFragmentsAdapter;
     private static MusicModel musicModel;
 
     @Override
@@ -84,6 +85,21 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
             if(viewPager!=null){
                 viewPager.setCurrentItem(1,true);
             }
+        }
+    }
+    public static void notifyAdapterFromActivity(MusicModel musicModelFromActivity){
+        if(mainFragmentsAdapter!=null) {
+            musicModel = musicModelFromActivity;
+            Handler handler = new Handler(activityContext.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mainFragmentsAdapter.notifyDataSetChanged();
+                }
+            });
+
+        }else{
+            return;
         }
     }
 }

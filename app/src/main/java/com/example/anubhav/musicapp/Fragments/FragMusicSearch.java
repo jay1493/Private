@@ -102,10 +102,11 @@ public class FragMusicSearch extends Fragment {
     private View fetchedClickedView;
     private int fetchedClickedPos;
     private PopupWindow popUpWindow;
-    private String songDuration;
-    private String songTitle;
+    private String songDuration = "";
+    private String songTitle = "";
     private String searchedSongTitle;
     private int numberOfNotifications = 0;
+    private String songImage;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
@@ -602,34 +603,58 @@ public class FragMusicSearch extends Fragment {
             try {
                 keepVidHome = Jsoup.connect(downloadLinks).get();
                 Element body = keepVidHome.select("body").get(0);
-                Elements timer = body.getElementsByClass("text");
-                songDuration =  timer.get(1).getElementsByIndexEquals(2).text();
-                songTitle = timer.get(1).getElementsByIndexEquals(1).get(0).child(0).text();
-                Elements divLinkBody = body.getElementsByClass("d-info2");
-                Elements dlElements = divLinkBody.select("dl");
-                for(Element dtElement : dlElements){
-                    Elements ddElements = dtElement.select("dd");
-                    for(Element ddElement : ddElements){
-                        Element link = ddElement.select("a[href]").get(0);
-                        Element spanWid = ddElement.select("a[href]").get(0).getElementsByClass("spanWid").get(0);
-                        if(spanWid.text().contains("MP3")||spanWid.text().contains("mp3")||spanWid.text().contains("M4A")||spanWid.text().contains("m4a")){
-                            //Audio Links
-                            AudioLinksModel audioLinksModel = new AudioLinksModel();
-                            audioLinksModel.setUrl(link.attr("abs:href"));
-                            String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
-                            String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
-                            audioLinksModel.setQuality(quality);
-                            audioLinksModel.setExtension(extension);
-                            audioLinks.add(audioLinksModel);
-                        }else{
-                            //Video Links
+                Element mainDivElementContainer = body.getElementsByClass("search-result-content").get(0).getElementsByClass("container-sm").get(0);
+                Element mainContainerExceptAudioLinks = mainDivElementContainer.getElementsByClass("row").get(0);
+                Element videoInfoMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-3").get(0);
+                Element songImageElement = videoInfoMainElement.getElementsByClass("result-img").get(0);
+                songImage = songImageElement.attr("src");
+                Elements videoInfoElements = videoInfoMainElement.select("p");
+                songTitle = videoInfoElements.get(0).text();
+                Pattern p = Pattern.compile("[0-9]+.[0-9]+");
+                String toMatch = videoInfoElements.get(1).text().replace(":",".");
+                Matcher durationMather = p.matcher(toMatch);
+                while (durationMather.find()){
+                    songDuration += durationMather.group();
+                }
+                Element videoLinksMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
+                Elements videoLinksRow = videoLinksMainElement.select("tr");
+                for(int i=0;i<videoLinksRow.size();i++){
+                    Elements videoLinksColumnElements = videoLinksRow.get(i).select("td");
+                    if(videoLinksColumnElements.size() == 4){
+                        if(videoLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")){
                             VideoLinksModel videoLinksModel = new VideoLinksModel();
-                            videoLinksModel.setUrl(link.attr("abs:href"));
-                            String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
-                            String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
-                            videoLinksModel.setQuality(quality);
-                            videoLinksModel.setExtension(extension);
+                            Element tdVideoLinkElementQuality = videoLinksColumnElements.get(0);
+                            Element tdVideoLinkElementExtension = videoLinksColumnElements.get(1);
+                            Element tdVideoLinkElementLink = videoLinksColumnElements.get(3).select("a[href]").get(0);
+                            videoLinksModel.setQuality(tdVideoLinkElementQuality.text());
+                            videoLinksModel.setExtension(tdVideoLinkElementExtension.text());
+                            videoLinksModel.setUrl(tdVideoLinkElementLink.attr("abs:href"));
                             videoLinks.add(videoLinksModel);
+
+                        }else{
+                            continue;
+                        }
+                    }
+                }
+
+                Element mainContainerOnlyAudioLinks = mainDivElementContainer.getElementsByClass("row mt40").get(0);
+                Element audioLinksMainElement = mainContainerOnlyAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
+                Elements audioLinksRow = audioLinksMainElement.select("tr");
+                for(int i=0;i<audioLinksRow.size();i++){
+                    Elements audioLinksColumnElements = audioLinksRow.get(i).select("td");
+                    if(audioLinksColumnElements.size() == 4){
+                        if(audioLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")){
+                            AudioLinksModel audioLinksModel = new AudioLinksModel();
+                            Element tdAudioLinkElementQuality = audioLinksColumnElements.get(0);
+                            Element tdAudioLinkElementExtension = audioLinksColumnElements.get(1);
+                            Element tdAudioLinkElementLink = audioLinksColumnElements.get(3).select("a[href]").get(0);
+                            audioLinksModel.setQuality(tdAudioLinkElementQuality.text());
+                            audioLinksModel.setExtension(tdAudioLinkElementExtension.text());
+                            audioLinksModel.setUrl(tdAudioLinkElementLink.attr("abs:href"));
+                            audioLinks.add(audioLinksModel);
+
+                        }else{
+                            continue;
                         }
                     }
                 }
@@ -652,6 +677,42 @@ public class FragMusicSearch extends Fragment {
             progressDialog.dismiss();
         }
 
+    }
+
+    private void commentedPreviousScrapeCode() {
+     /*   keepVidHome = Jsoup.connect(downloadLinks).get();
+        Element body = keepVidHome.select("body").get(0);
+        Elements timer = body.getElementsByClass("text");
+        songDuration =  timer.get(1).getElementsByIndexEquals(2).text();
+        songTitle = timer.get(1).getElementsByIndexEquals(1).get(0).child(0).text();
+        Elements divLinkBody = body.getElementsByClass("d-info2");
+        Elements dlElements = divLinkBody.select("dl");
+        for(Element dtElement : dlElements){
+            Elements ddElements = dtElement.select("dd");
+            for(Element ddElement : ddElements){
+                Element link = ddElement.select("a[href]").get(0);
+                Element spanWid = ddElement.select("a[href]").get(0).getElementsByClass("spanWid").get(0);
+                if(spanWid.text().contains("MP3")||spanWid.text().contains("mp3")||spanWid.text().contains("M4A")||spanWid.text().contains("m4a")){
+                    //Audio Links
+                    AudioLinksModel audioLinksModel = new AudioLinksModel();
+                    audioLinksModel.setUrl(link.attr("abs:href"));
+                    String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
+                    String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
+                    audioLinksModel.setQuality(quality);
+                    audioLinksModel.setExtension(extension);
+                    audioLinks.add(audioLinksModel);
+                }else{
+                    //Video Links
+                    VideoLinksModel videoLinksModel = new VideoLinksModel();
+                    videoLinksModel.setUrl(link.attr("abs:href"));
+                    String quality = spanWid.text().substring(spanWid.text().indexOf("-")+1,spanWid.text().length());
+                    String extension = spanWid.text().substring(0,spanWid.text().indexOf("-"));
+                    videoLinksModel.setQuality(quality);
+                    videoLinksModel.setExtension(extension);
+                    videoLinks.add(videoLinksModel);
+                }
+            }
+        }*/
     }
 
     private void initiatePopupWindow(DownloadVidsModel result) {
@@ -833,13 +894,17 @@ public class FragMusicSearch extends Fragment {
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             notificationManager.cancelAll();
+//   Todo: InProcess To ,make album Muziek   activityContext.getContentResolver().update(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,)
             if(result.trim().equalsIgnoreCase("M4A")|| result.trim().equalsIgnoreCase("mp3")) {
                 ContentValues contentValues = new ContentValues();
                 contentValues.put(MediaStore.Audio.AudioColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
                 contentValues.put(MediaStore.Audio.AudioColumns.TITLE, searchedSongTitle.trim());
                 contentValues.put(MediaStore.Audio.AudioColumns.ALBUM, Constants.APP_NAME);
+                contentValues.put(MediaStore.Audio.AudioColumns.ALBUM_KEY, Constants.APP_NAME);
                 contentValues.put(MediaStore.Audio.AudioColumns.ARTIST, songTitle);
-                songDuration = songDuration.replace(':', '.');
+                if(songDuration.contains(":")) {
+                    songDuration = songDuration.replace(':', '.');
+                }
                 Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
                 Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
                 contentValues.put(MediaStore.Audio.AudioColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
