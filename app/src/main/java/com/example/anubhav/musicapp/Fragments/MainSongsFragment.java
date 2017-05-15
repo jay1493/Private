@@ -44,17 +44,24 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
         }else{
             musicModel = null;
         }
-
-        if(fragContext==null){
+        /** Due to the below code, whenever we try to recreate our MainSongsFragment, we are not getting the
+         * fragment or the fragment was not visible, due to the fact that due to below code, we are getting
+         * the old context of this fragment and that we are trying to replace/add in fragmentManager in
+         * DashboardActivity.
+         *
+         * /* if(fragContext==null){
             fragContext = new MainSongsFragment();
-        }
-        return fragContext;
+         *   }
+         *  /
+         */
+
+        return new MainSongsFragment();
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRetainInstance(true);
+//        setRetainInstance(true);
     }
 
     @Nullable
@@ -87,13 +94,13 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
             }
         }
     }
-    public static void notifyAdapterFromActivity(MusicModel musicModelFromActivity){
+    public static void notifyAdapterFromActivity(final MusicModel musicModelFromActivity){
         if(mainFragmentsAdapter!=null) {
-            musicModel = musicModelFromActivity;
             Handler handler = new Handler(activityContext.getMainLooper());
             handler.post(new Runnable() {
                 @Override
                 public void run() {
+                    musicModel = musicModelFromActivity;
                     mainFragmentsAdapter.notifyDataSetChanged();
                 }
             });

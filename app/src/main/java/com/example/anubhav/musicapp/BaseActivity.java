@@ -40,6 +40,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
     private ArrayList<AlbumModel> albumModelArrayList;
     private ProgressDialog progressDialog;
     private Handler handler;
+    private Context activityContext;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -68,6 +69,7 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
     public void callLoaders(final Context context){
+        activityContext = context;
         albumModelArrayList = new ArrayList<>();
         songsModelArrayList = new ArrayList<>();
         albumModelHashMap = new HashMap();
@@ -175,7 +177,13 @@ public class BaseActivity extends AppCompatActivity implements LoaderManager.Loa
                 @Override
                 public void run() {
                     progressDialog.dismiss();
-                    MainSongsFragment.notifyAdapterFromActivity(musicModel);
+               /*     Toast.makeText(activityContext, "Inside Base", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(activityContext,DashboardActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    intent.putExtra(Constants.SEND_MUSIC_AS_EXTRA,musicModel);
+                    startActivity(intent);*/
+//                    MainSongsFragment.notifyAdapterFromActivity(musicModel);
+                    DashboardActivity.refershLayout(musicModel);
                 }
             });
 

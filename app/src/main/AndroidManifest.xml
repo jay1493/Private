@@ -44,6 +44,7 @@
         <activity android:name=".DashboardActivity"
             android:hardwareAccelerated="false"
             android:theme="@style/MainScreenTheme"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize|stateUnchanged">
              <!-- <intent-filter>
               <action android:name="android.intent.action.MAIN" />

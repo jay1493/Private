@@ -28,4 +28,5 @@
     <string name="download_interupted">Download Interupted</string>
     <string name="functionality_disabled_as_you_are_not_connected_to_a_network">Functionality disabled as device is not connected to a network.</string>
     <string name="Enter_a_song_name_to_start_query">Enter a song name to start a query.</string>
+    <string name="Song_is_not_available_now_might_have_been_deleted">Song is not available now, might have been deleted.</string>
 </resources>

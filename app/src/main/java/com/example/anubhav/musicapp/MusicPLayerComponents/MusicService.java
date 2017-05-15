@@ -16,7 +16,9 @@ import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 
 import com.example.anubhav.musicapp.Constants;
+import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Model.SongsModel;
+import com.example.anubhav.musicapp.R;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -109,11 +111,19 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
             musicPlayer.reset();
             long currSongId = Long.valueOf(songModel.getSongId());
             Uri trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,currSongId);
-            try {
-                musicPlayer.setDataSource(getApplicationContext(),trackUri);
-                musicPlayer.prepareAsync();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if(trackUri!=null && Integer.parseInt(songModel.getSongDuration())/(1000*60) >= 0) {
+                try {
+                    musicPlayer.setDataSource(getApplicationContext(), trackUri);
+                    musicPlayer.prepareAsync();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }else if(trackUri != null){
+                context.getContentResolver().delete(trackUri,null,null);
+                DashboardActivity.initializeSnackBarFromService(context.getResources().getString(R.string.Song_is_not_available_now_might_have_been_deleted));
+
+            }else{
+                DashboardActivity.initializeSnackBarFromService(context.getResources().getString(R.string.Song_is_not_available_now_might_have_been_deleted));
             }
         }
     }

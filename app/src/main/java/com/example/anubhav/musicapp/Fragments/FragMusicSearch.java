@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.media.MediaScannerConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -22,6 +24,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.transition.Fade;
 import android.transition.Transition;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,9 +42,12 @@ import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.example.anubhav.musicapp.Adapters.LinkClickAdapter;
 import com.example.anubhav.musicapp.Adapters.YoutubeSearchAdapter;
 import com.example.anubhav.musicapp.Constants;
+import com.example.anubhav.musicapp.DashboardActivity;
 import com.example.anubhav.musicapp.Interfaces.ItemClickListener;
 import com.example.anubhav.musicapp.Model.AudioLinksModel;
 import com.example.anubhav.musicapp.Model.DownloadVidsModel;
+import com.example.anubhav.musicapp.Model.MusicModel;
+import com.example.anubhav.musicapp.Model.SongsModel;
 import com.example.anubhav.musicapp.Model.VideoLinksModel;
 import com.example.anubhav.musicapp.Model.YouTubeSearchedVideos;
 import com.example.anubhav.musicapp.R;
@@ -75,6 +81,7 @@ import java.util.regex.Pattern;
  */
 
 public class FragMusicSearch extends Fragment {
+    private static MusicModel musicModel = null;
     private Context activityContext;
     private static final String songFetchKey = "SongKey";
     private final String SEARCH_URL_1 = Constants.FETCH_RESULTS_VIA_READING_HTML_OF_YOUTUBE_RESULTS_URL_1;
@@ -107,10 +114,14 @@ public class FragMusicSearch extends Fragment {
     private String searchedSongTitle;
     private int numberOfNotifications = 0;
     private String songImage;
+    private ContentValues contentValues;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
             song = bundle.getString(songFetchKey,null);
+            if(DashboardActivity.musicModel!=null){
+                musicModel = DashboardActivity.musicModel;
+            }
         }
         if(fragmentContext == null){
             //Will go straight to onCreate..could pass bundle here..
@@ -604,62 +615,74 @@ public class FragMusicSearch extends Fragment {
                 keepVidHome = Jsoup.connect(downloadLinks).get();
                 Element body = keepVidHome.select("body").get(0);
                 Element mainDivElementContainer = body.getElementsByClass("search-result-content").get(0).getElementsByClass("container-sm").get(0);
-                Element mainContainerExceptAudioLinks = mainDivElementContainer.getElementsByClass("row").get(0);
-                Element videoInfoMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-3").get(0);
-                Element songImageElement = videoInfoMainElement.getElementsByClass("result-img").get(0);
-                songImage = songImageElement.attr("src");
-                Elements videoInfoElements = videoInfoMainElement.select("p");
-                songTitle = videoInfoElements.get(0).text();
-                Pattern p = Pattern.compile("[0-9]+.[0-9]+");
-                String toMatch = videoInfoElements.get(1).text().replace(":",".");
-                Matcher durationMather = p.matcher(toMatch);
-                while (durationMather.find()){
-                    songDuration += durationMather.group();
-                }
-                Element videoLinksMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
-                Elements videoLinksRow = videoLinksMainElement.select("tr");
-                for(int i=0;i<videoLinksRow.size();i++){
-                    Elements videoLinksColumnElements = videoLinksRow.get(i).select("td");
-                    if(videoLinksColumnElements.size() == 4){
-                        if(videoLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")){
-                            VideoLinksModel videoLinksModel = new VideoLinksModel();
-                            Element tdVideoLinkElementQuality = videoLinksColumnElements.get(0);
-                            Element tdVideoLinkElementExtension = videoLinksColumnElements.get(1);
-                            Element tdVideoLinkElementLink = videoLinksColumnElements.get(3).select("a[href]").get(0);
-                            videoLinksModel.setQuality(tdVideoLinkElementQuality.text());
-                            videoLinksModel.setExtension(tdVideoLinkElementExtension.text());
-                            videoLinksModel.setUrl(tdVideoLinkElementLink.attr("abs:href"));
-                            videoLinks.add(videoLinksModel);
+                if(mainDivElementContainer!=null) {
+                    Element mainContainerExceptAudioLinks = mainDivElementContainer.getElementsByClass("row").get(0);
+                    Element videoInfoMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-3").get(0);
+                    if(videoInfoMainElement!=null) {
+                        Element songImageElement = videoInfoMainElement.getElementsByClass("result-img").get(0);
+                        if(songImageElement!=null) {
+                            songImage = songImageElement.attr("src");
+                            Elements videoInfoElements = videoInfoMainElement.select("p");
+                            songTitle = videoInfoElements.get(0).text();
+                            Pattern p = Pattern.compile("[0-9]+.[0-9]+");
+                            String toMatch = videoInfoElements.get(1).text().replace(":", ".");
+                            Matcher durationMather = p.matcher(toMatch);
+                            while (durationMather.find()) {
+                                songDuration += durationMather.group();
+                            }
+                            Element videoLinksMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
+                            Elements videoLinksRow = videoLinksMainElement.select("tr");
+                            for (int i = 0; i < videoLinksRow.size(); i++) {
+                                Elements videoLinksColumnElements = videoLinksRow.get(i).select("td");
+                                if (videoLinksColumnElements.size() == 4) {
+                                    if (videoLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")) {
+                                        VideoLinksModel videoLinksModel = new VideoLinksModel();
+                                        Element tdVideoLinkElementQuality = videoLinksColumnElements.get(0);
+                                        Element tdVideoLinkElementExtension = videoLinksColumnElements.get(1);
+                                        Element tdVideoLinkElementLink = videoLinksColumnElements.get(3).select("a[href]").get(0);
+                                        videoLinksModel.setQuality(tdVideoLinkElementQuality.text());
+                                        videoLinksModel.setExtension(tdVideoLinkElementExtension.text());
+                                        videoLinksModel.setUrl(tdVideoLinkElementLink.attr("abs:href"));
+                                        videoLinks.add(videoLinksModel);
 
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            Element mainContainerOnlyAudioLinks = mainDivElementContainer.getElementsByClass("row mt40").get(0);
+                            Element audioLinksMainElement = mainContainerOnlyAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
+                            Elements audioLinksRow = audioLinksMainElement.select("tr");
+                            for (int i = 0; i < audioLinksRow.size(); i++) {
+                                Elements audioLinksColumnElements = audioLinksRow.get(i).select("td");
+                                if (audioLinksColumnElements.size() == 4) {
+                                    if (audioLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")) {
+                                        AudioLinksModel audioLinksModel = new AudioLinksModel();
+                                        Element tdAudioLinkElementQuality = audioLinksColumnElements.get(0);
+                                        Element tdAudioLinkElementExtension = audioLinksColumnElements.get(1);
+                                        Element tdAudioLinkElementLink = audioLinksColumnElements.get(3).select("a[href]").get(0);
+                                        audioLinksModel.setQuality(tdAudioLinkElementQuality.text());
+                                        audioLinksModel.setExtension(tdAudioLinkElementExtension.text());
+                                        audioLinksModel.setUrl(tdAudioLinkElementLink.attr("abs:href"));
+                                        audioLinks.add(audioLinksModel);
+
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                            }
+                            downloadvidsModel.setAudioLinks(audioLinks);
+                            downloadvidsModel.setVideoLinks(videoLinks);
                         }else{
-                            continue;
+                            Toast.makeText(activityContext, "Link for the current selected song is broken! Try another song...", Toast.LENGTH_SHORT).show();
                         }
+                    }else{
+                        Toast.makeText(activityContext, "Link for the current selected song is broken! Try another song...", Toast.LENGTH_SHORT).show();
                     }
+                }else{
+                    Toast.makeText(activityContext, "Link for the current selected song is broken! Try another song...", Toast.LENGTH_SHORT).show();
                 }
-
-                Element mainContainerOnlyAudioLinks = mainDivElementContainer.getElementsByClass("row mt40").get(0);
-                Element audioLinksMainElement = mainContainerOnlyAudioLinks.getElementsByClass("item-9").get(0).getElementsByClass("result-table").get(0).select("tbody").get(0);
-                Elements audioLinksRow = audioLinksMainElement.select("tr");
-                for(int i=0;i<audioLinksRow.size();i++){
-                    Elements audioLinksColumnElements = audioLinksRow.get(i).select("td");
-                    if(audioLinksColumnElements.size() == 4){
-                        if(audioLinksColumnElements.get(3).select("a[href]").get(0).attr("abs:href").contains("https://")){
-                            AudioLinksModel audioLinksModel = new AudioLinksModel();
-                            Element tdAudioLinkElementQuality = audioLinksColumnElements.get(0);
-                            Element tdAudioLinkElementExtension = audioLinksColumnElements.get(1);
-                            Element tdAudioLinkElementLink = audioLinksColumnElements.get(3).select("a[href]").get(0);
-                            audioLinksModel.setQuality(tdAudioLinkElementQuality.text());
-                            audioLinksModel.setExtension(tdAudioLinkElementExtension.text());
-                            audioLinksModel.setUrl(tdAudioLinkElementLink.attr("abs:href"));
-                            audioLinks.add(audioLinksModel);
-
-                        }else{
-                            continue;
-                        }
-                    }
-                }
-                downloadvidsModel.setAudioLinks(audioLinks);
-                downloadvidsModel.setVideoLinks(videoLinks);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -895,37 +918,86 @@ public class FragMusicSearch extends Fragment {
             super.onPostExecute(result);
             notificationManager.cancelAll();
 //   Todo: InProcess To ,make album Muziek   activityContext.getContentResolver().update(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,)
-            if(result.trim().equalsIgnoreCase("M4A")|| result.trim().equalsIgnoreCase("mp3")) {
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(MediaStore.Audio.AudioColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
-                contentValues.put(MediaStore.Audio.AudioColumns.TITLE, searchedSongTitle.trim());
-                contentValues.put(MediaStore.Audio.AudioColumns.ALBUM, Constants.APP_NAME);
-                contentValues.put(MediaStore.Audio.AudioColumns.ALBUM_KEY, Constants.APP_NAME);
-                contentValues.put(MediaStore.Audio.AudioColumns.ARTIST, songTitle);
-                if(songDuration.contains(":")) {
+            try {
+                if (result.trim().equalsIgnoreCase("M4A") || result.trim().equalsIgnoreCase("mp3")) {
+                    contentValues = new ContentValues();
+                    contentValues.put(MediaStore.Audio.AudioColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
+                    contentValues.put(MediaStore.Audio.AudioColumns.TITLE, searchedSongTitle.trim());
+                    contentValues.put(MediaStore.Audio.AudioColumns.ALBUM, Constants.APP_NAME);
+                    contentValues.put(MediaStore.Audio.AudioColumns.ALBUM_KEY, Constants.APP_NAME);
+                    contentValues.put(MediaStore.Audio.AudioColumns.ARTIST, songTitle);
+                    if (songDuration.contains(":")) {
+                        songDuration = songDuration.replace(':', '.');
+                    }
+                    Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
+                    Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
+                    contentValues.put(MediaStore.Audio.AudioColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
+                    contentValues.put(MediaStore.Audio.AudioColumns.DISPLAY_NAME, searchedSongTitle.trim());
+// more columns should be filled from here
+                    new RefereshMusicModel().execute("Audio");
+                } else {
+                    contentValues = new ContentValues();
+                    contentValues.put(MediaStore.Video.VideoColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
+                    contentValues.put(MediaStore.Video.VideoColumns.TITLE, searchedSongTitle.trim());
+                    contentValues.put(MediaStore.Video.VideoColumns.ARTIST, songTitle);
                     songDuration = songDuration.replace(':', '.');
+                    Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
+                    Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
+                    contentValues.put(MediaStore.Video.VideoColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
+                    contentValues.put(MediaStore.Video.VideoColumns.DISPLAY_NAME, searchedSongTitle.trim());
+// more columns should be filled from here
+                    new RefereshMusicModel().execute("Video");
                 }
-                Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
-                Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
-                contentValues.put(MediaStore.Audio.AudioColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
-                contentValues.put(MediaStore.Audio.AudioColumns.DISPLAY_NAME, searchedSongTitle.trim());
-// more columns should be filled from here
-                activityContext.getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues);
-            }else{
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(MediaStore.Video.VideoColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
-                contentValues.put(MediaStore.Video.VideoColumns.TITLE, searchedSongTitle.trim());
-                contentValues.put(MediaStore.Video.VideoColumns.ARTIST, songTitle);
-                songDuration = songDuration.replace(':', '.');
-                Long songDurationMins = Long.parseLong(songDuration.substring(0, songDuration.indexOf('.')));
-                Long songDurationSecs = Long.parseLong(songDuration.substring(songDuration.indexOf('.') + 1, songDuration.length()));
-                contentValues.put(MediaStore.Video.VideoColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
-                contentValues.put(MediaStore.Video.VideoColumns.DISPLAY_NAME, searchedSongTitle.trim());
-// more columns should be filled from here
-                activityContext.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
-
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
 
+    }
+    private class RefereshMusicModel extends AsyncTask<String,String,String>{
+
+        @Override
+        protected String doInBackground(String... params) {
+            if(params[0].equalsIgnoreCase("Audio")) {
+                if (contentValues != null) {
+                    activityContext.getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues);
+                }
+                MediaScannerConnection.scanFile(
+                        activityContext,
+                        new String[]{(String) contentValues.get(MediaStore.Audio.AudioColumns.DATA)},
+                        null,
+                        new MediaScannerConnection.OnScanCompletedListener() {
+                            @Override
+                            public void onScanCompleted(String path, Uri uri) {
+                                new Handler(activityContext.getMainLooper()).post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(activityContext, "Song added successfully!", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                        });
+            }else{
+                    if (contentValues != null) {
+                        activityContext.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+                    }
+                    MediaScannerConnection.scanFile(
+                            activityContext,
+                            new String[]{(String) contentValues.get(MediaStore.Video.VideoColumns.DATA)},
+                            null,
+                            new MediaScannerConnection.OnScanCompletedListener() {
+                                @Override
+                                public void onScanCompleted(String path, Uri uri) {
+                                    new Handler(activityContext.getMainLooper()).post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(activityContext, "Video added successfully!", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }
+                            });
+            }
+            return null;
+        }
     }
 }

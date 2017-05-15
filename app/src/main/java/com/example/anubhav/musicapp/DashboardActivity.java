@@ -51,8 +51,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -88,8 +86,6 @@ import com.example.anubhav.musicapp.Observers.MySongsObserver;
 import com.google.gson.Gson;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.wooplr.spotlight.SpotlightConfig;
-import com.wooplr.spotlight.SpotlightView;
-import com.wooplr.spotlight.utils.SpotlightListener;
 import com.wooplr.spotlight.utils.SpotlightSequence;
 
 import org.json.JSONArray;
@@ -98,7 +94,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,6 +109,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     public static final String MUSICFRAGSERACH = "MUSICFRAGSERACH";
     public static final String MUSICFRAG = "MUSICFRAG";
     private static final String songFetchKey = "SongKey";
+    private static final String MUSICFRAGSERACH_BACKSTACK = "MUSICFRAGSERACH_BACKSTACK";
     private SurfaceView videoView;
     private android.widget.MediaController mediaController;
     private ImageView videoLoader;
@@ -123,10 +119,10 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private EditText etSearchSong;
     private LinearLayout mainLayout;
     private MainSongsFragment mainSongFragment;
-    private FragmentManager fragmentManager;
+    private static FragmentManager fragmentManager;
     private ImageView searchSong,listenSong;
     private Context context;
-    private FrameLayout mainDashboardLayout;
+    private static FrameLayout mainDashboardLayout;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1992;
     private final int Manifest_permission_WRITE_EXTERNAL_STORAGE = 1993;
@@ -137,7 +133,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     //    private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private static final String 		appString				= Constants.APP_NAME;
 
-    private boolean activityCreatedForFirstTime = true;
     private AssetFileDescriptor videoLoadingFromAssets;
 
     /**
@@ -161,7 +156,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     }
     private AudioFingerPrintingResultModel audioFingerPrintingResultModel;
     private LinearLayout fragmentLayout,albumSearchLayout;
-    private MusicModel musicModel;
+    public static MusicModel musicModel;
     private MySongsObserver mySongsObserver;
     /**
      *
@@ -235,7 +230,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private SongsModel retrievedCurrentSong = null;
     private SharedPreferences currentPlayingSongSharedPrefs;
     private SongsModel currentPlayingSongFromPrefs;
-    private boolean contentObserverExecuted;
     private int searchedMusicPosition = -1;
     private int previousSongIndex = 1;
     private ImageView songImageOnScreen;
@@ -246,6 +240,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private CustomAudioLoseListener customAudioLoseListener;
     private boolean isRevealEnabled = false;
     private ImageView videoPlaceHolder;
+    private Drawable.ConstantState playFilledConstantState;
+    private Drawable.ConstantState playlistConstantState;
+    private Drawable.ConstantState switchToImageConstatntState;
+    private boolean activityCreatedForFirstTime = true;
+    private static Fragment attachedFragment;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -415,12 +414,23 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         }
         mainSongFragment = MainSongsFragment.getInstance(bundle);
         fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.fragmentView, mainSongFragment,MUSICFRAG);
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-        fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
-        fragmentTransaction.addToBackStack(MUSICFRAG);
-        fragmentTransaction.commit();
+        //noinspection RestrictedApi
+        if(fragmentManager.getFragments()!=null && fragmentManager.getFragments().size()>0){
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE);
+            fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
+            fragmentTransaction.replace(R.id.fragmentView, mainSongFragment,MUSICFRAG);
+            fragmentTransaction.commit();
+        }else{
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE);
+            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+            fragmentTransaction.setCustomAnimations(R.anim.fade_in,R.anim.fade_out);
+            fragmentTransaction.add(R.id.fragmentView, mainSongFragment,MUSICFRAG);
+            fragmentTransaction.commit();
+        }
+        fragmentManager.executePendingTransactions();
+
     }
 
 
@@ -451,6 +461,13 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         slidingLayout.setDragView(R.id.dragLayout);
         initExpandedView();
         copyPlaylistList = new ArrayList<>();
+        //noinspection RestrictedApi
+        playFilledConstantState = AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState();
+        //noinspection RestrictedApi
+        playlistConstantState = AppCompatDrawableManager.get().getDrawable(context, R.drawable.playlist).getConstantState();
+        //noinspection RestrictedApi
+        switchToImageConstatntState = AppCompatDrawableManager.get().getDrawable(context, R.drawable.switch_to_image).getConstantState();
+
     }
 
     private void initExpandedView() {
@@ -794,7 +811,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         musicService.pauseMediaPlayer();
                         playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
                     }
-                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()){
+                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == playFilledConstantState){
                     //Currently Paused
                     if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
                         //In secs
@@ -808,50 +825,54 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
                         }
                     }
-                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()){
-                    //Setup Playlist...
-                    if(currentPlayingSong!=null) {
-                        if(copyPlaylistList!=null && copyPlaylistList.contains(currentPlayingSong)) {
-                            copyPlaylistList.remove(currentPlayingSong);
-                        }else if(copyPlaylistList != null && copyPlaylistList.size() == 0){
-                            copyPlaylistList = playlistModel.getSongsModelList();
-                            if(copyPlaylistList.contains(currentPlayingSong)){
+                }else {
+                    if(playlist_Or_pauseButton.getDrawable().getConstantState() == playlistConstantState){
+                        //Setup Playlist...
+                        if(currentPlayingSong!=null) {
+                            if(copyPlaylistList!=null && copyPlaylistList.contains(currentPlayingSong)) {
                                 copyPlaylistList.remove(currentPlayingSong);
-                            }
-                        }
-                    }else{
-                        copyPlaylistList = playlistModel.getSongsModelList();
-                    }
-                    if(copyPlaylistList!=null && copyPlaylistList.size() >0) {
-                        albumImageLayout.setVisibility(View.GONE);
-                        playlistLayout.setVisibility(View.VISIBLE);
-
-                        playlistAdapter = new SongsListAdapter(context, copyPlaylistList, new ItemClickListener() {
-                            @Override
-                            public void itemClick(View view, int position) {
-                                SongsModel tempCurrentModel = copyPlaylistList.get(position);
-                                if(currentPlayingSong!=null){
-                                    if(!copyPlaylistList.contains(currentPlayingSong)) {
-                                        copyPlaylistList.add(currentPlayingSong);
-                                    }
-                                }
-                                currentPlayingSong = tempCurrentModel;
-                                inflateMusicLayout(currentPlayingSong);
-//                                playlistModel.removeCurrentSong(currentPlayingSong);
-                                if(copyPlaylistList.contains(currentPlayingSong)) {
+                            }else if(copyPlaylistList != null && copyPlaylistList.size() == 0){
+                                copyPlaylistList = playlistModel.getSongsModelList();
+                                if(copyPlaylistList.contains(currentPlayingSong)){
                                     copyPlaylistList.remove(currentPlayingSong);
                                 }
-                                playlistAdapter.notifyDataSetChanged();
                             }
-                        }, true, null, this,false);
-                        playlistRecyclerView.setAdapter(playlistAdapter);
-                        playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                        }else{
+                            copyPlaylistList = playlistModel.getSongsModelList();
+                        }
+                        if(copyPlaylistList!=null && copyPlaylistList.size() >0) {
+                            albumImageLayout.setVisibility(View.GONE);
+                            playlistLayout.setVisibility(View.VISIBLE);
+
+                            playlistAdapter = new SongsListAdapter(context, copyPlaylistList, new ItemClickListener() {
+                                @Override
+                                public void itemClick(View view, int position) {
+                                    SongsModel tempCurrentModel = copyPlaylistList.get(position);
+                                    if(currentPlayingSong!=null){
+                                        if(!copyPlaylistList.contains(currentPlayingSong)) {
+                                            copyPlaylistList.add(currentPlayingSong);
+                                        }
+                                    }
+                                    currentPlayingSong = tempCurrentModel;
+                                    inflateMusicLayout(currentPlayingSong);
+    //                                playlistModel.removeCurrentSong(currentPlayingSong);
+                                    if(copyPlaylistList.contains(currentPlayingSong)) {
+                                        copyPlaylistList.remove(currentPlayingSong);
+                                    }
+                                    playlistAdapter.notifyDataSetChanged();
+                                }
+                            }, true, null, this,false);
+                            playlistRecyclerView.setAdapter(playlistAdapter);
+                            playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                        }
+                    }else {
+                        if(playlist_Or_pauseButton.getDrawable().getConstantState() == switchToImageConstatntState){
+                            //Switch Layouts
+                            playlistLayout.setVisibility(View.GONE);
+                            albumImageLayout.setVisibility(View.VISIBLE);
+                            playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                        }
                     }
-                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
-                    //Switch Layouts
-                    playlistLayout.setVisibility(View.GONE);
-                    albumImageLayout.setVisibility(View.VISIBLE);
-                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
                 }
                 break;
             case R.id.playPause_song_musicLayout:
@@ -1079,7 +1100,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             @Override
             public void isProcessCompleted(boolean isComplete) {
                 if(isComplete) {
-                        contentObserverExecuted = true;
+
                         callLoaders(DashboardActivity.this);
                         Log.d("Dashboard", "isProcessCompleted: StartLoader");
 //                      Toast.makeText(context, "Observer Observed", Toast.LENGTH_SHORT).show();
@@ -1091,13 +1112,25 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             }
         });
         getContentResolver().registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,true,mySongsObserver);
-
         Log.d("", "isProcessCompleted: OutsideFunction");
     }
 
     @Override
     public void onBackPressed() {
-        if(fragmentManager.getBackStackEntryCount()>0) {
+        if (slidingLayout != null &&
+                (slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED || slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.ANCHORED)) {
+            slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+        }else {
+            etSearchSong.setText("");
+            etSearchSong.clearFocus();
+            super.onBackPressed();
+        }
+       /* if(fragmentManager.getBackStackEntryCount()>0) {
+            if(fragmentManager.getBackStackEntryCount() == 1 && attachedFragment.getTag().equalsIgnoreCase(fragmentManager.getBackStackEntryAt(0).getName())){
+                //We are on the same fragment:
+                super.onBackPressed();
+                return;
+            }
            for(int i = fragmentManager.getBackStackEntryCount()-1;i>=0;i--){
                FragmentTransaction fragmentTransaction =  fragmentManager.beginTransaction();
                FragmentManager.BackStackEntry backStackEntry= fragmentManager.getBackStackEntryAt(i);
@@ -1118,7 +1151,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             }
         }else{
             super.onBackPressed();
-        }
+        }*/
 
     }
 
@@ -1155,6 +1188,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
                         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
                         fragmentTransaction.replace(R.id.fragmentView, fragMusicSearch, MUSICFRAGSERACH);
+                        fragmentTransaction.addToBackStack(MUSICFRAGSERACH_BACKSTACK);
                         fragmentTransaction.commit();
 
                     }
@@ -1185,25 +1219,26 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     @Override
     public void onAttachFragment(Fragment fragment) {
         super.onAttachFragment(fragment);
+        attachedFragment = fragment;
     }
 
 
     private void permissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
-                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.WAKE_LOCK,Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
+            if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.WAKE_LOCK) != PackageManager.PERMISSION_GRANTED
+                    && context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.WAKE_LOCK, Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS);
 
-            } else if(context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!= PackageManager.PERMISSION_GRANTED
-                    || context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED) {
+            } else if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.WAKE_LOCK) != PackageManager.PERMISSION_GRANTED
+                    || context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                 if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, Manifest_permission_READ_EXTERNAL_STORAGE);
                 }
@@ -1214,14 +1249,14 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, Manifest_permission_RECORD_AUDIO);
                 }
-                if(context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, Manifest_permission_LOCATION);
                 }
-                if(context.checkSelfPermission(Manifest.permission.WAKE_LOCK)!=PackageManager.PERMISSION_GRANTED){
-                    requestPermissions(new String[]{Manifest.permission.WAKE_LOCK},Manifest_permission_WAKE_LOCK);
+                if (context.checkSelfPermission(Manifest.permission.WAKE_LOCK) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.WAKE_LOCK}, Manifest_permission_WAKE_LOCK);
                 }
-                if(context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE)!=PackageManager.PERMISSION_GRANTED){
-                    requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},Manifest_permission_READ_PHONE_STATE);
+                if (context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, Manifest_permission_READ_PHONE_STATE);
                 }
                 setUpInitialHomeFragment();
             }
@@ -1649,6 +1684,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         Snackbar snackbar = Snackbar.make(mainDashboardLayout,str,Snackbar.LENGTH_SHORT);
         snackbar.show();
     }
+    public static void initializeSnackBarFromService(String str){
+        Snackbar snackbar = Snackbar.make(mainDashboardLayout,str,Snackbar.LENGTH_SHORT);
+        snackbar.show();
+    }
+
     private Bitmap createCircularBitmap(Bitmap bitmap){
         if(bitmap == null){
             return null;
@@ -1734,6 +1774,29 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 }catch (Exception e){
                     e.printStackTrace();
                 }
+
+            }
+        }
+    }
+
+    public static void refershLayout(MusicModel newModel){
+        if(newModel!=null) {
+            musicModel = newModel;
+            if (attachedFragment.getTag().equalsIgnoreCase("MUSICFRAG")) {
+                Bundle bundle = null;
+                if (musicModel != null) {
+                    bundle = new Bundle();
+                    bundle.putSerializable(Constants.SEND_MUSIC_AS_EXTRA, musicModel);
+                }
+                MainSongsFragment mainSongFragment = MainSongsFragment.getInstance(bundle);
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction.remove(attachedFragment);
+                fragmentTransaction.add(R.id.fragmentView, mainSongFragment, MUSICFRAG);
+                fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
+                fragmentTransaction.addToBackStack(MUSICFRAG);
+                fragmentTransaction.commit();
+            } else {
 
             }
         }
