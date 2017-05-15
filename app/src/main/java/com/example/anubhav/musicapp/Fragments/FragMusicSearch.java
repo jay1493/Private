@@ -22,6 +22,7 @@ import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.TextUtils;
 import android.transition.Fade;
 import android.transition.Transition;
 import android.util.Log;
@@ -696,7 +697,12 @@ public class FragMusicSearch extends Fragment {
         protected void onPostExecute(DownloadVidsModel result) {
             super.onPostExecute(result);
             // Cancel the Loading Dialog
-            initiatePopupWindow(result);
+            if(result!=null && (result.getAudioLinks()!=null && result.getAudioLinks().size()>0 || result.getVideoLinks()!=null
+                    && result.getVideoLinks().size()>0)) {
+                initiatePopupWindow(result);
+            }else{
+                DashboardActivity.initializeSnackBarFromService(activityContext.getResources().getString(R.string.No_Links_available_for_the_selected_song));
+            }
             progressDialog.dismiss();
         }
 
@@ -751,7 +757,9 @@ public class FragMusicSearch extends Fragment {
             public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
                 if(audioLists!=null) {
                     popUpWindow.dismiss();
-                    new DownloadLink().execute(audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
+                    if(audioLists.get(pos)!=null && !TextUtils.isEmpty(audioLists.get(pos).getUrl())) {
+                        new DownloadLink().execute(audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
+                    }
                 }
             }
         });
@@ -761,7 +769,9 @@ public class FragMusicSearch extends Fragment {
             public void onLinkClick(View view, int pos, List<AudioLinksModel> audioLists, List<VideoLinksModel> videoLists) {
                 if(videoLists!=null){
                     popUpWindow.dismiss();
-                    new DownloadLink().execute(videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
+                    if(videoLists.get(pos)!=null && !TextUtils.isEmpty(videoLists.get(pos).getUrl())) {
+                        new DownloadLink().execute(videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
+                    }
 
                 }
             }
@@ -934,7 +944,7 @@ public class FragMusicSearch extends Fragment {
                     contentValues.put(MediaStore.Audio.AudioColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
                     contentValues.put(MediaStore.Audio.AudioColumns.DISPLAY_NAME, searchedSongTitle.trim());
 // more columns should be filled from here
-                    new RefereshMusicModel().execute("Audio");
+                    new RefreshMusicModel().execute("Audio");
                 } else {
                     contentValues = new ContentValues();
                     contentValues.put(MediaStore.Video.VideoColumns.DATA, Constants.MUSIC_SAVE_PATH + searchedSongTitle.trim() + "." + result);
@@ -946,7 +956,7 @@ public class FragMusicSearch extends Fragment {
                     contentValues.put(MediaStore.Video.VideoColumns.DURATION, ((songDurationMins * 60 + songDurationSecs) * 1000));
                     contentValues.put(MediaStore.Video.VideoColumns.DISPLAY_NAME, searchedSongTitle.trim());
 // more columns should be filled from here
-                    new RefereshMusicModel().execute("Video");
+                    new RefreshMusicModel().execute("Video");
                 }
             }catch (Exception e){
                 e.printStackTrace();
@@ -954,7 +964,7 @@ public class FragMusicSearch extends Fragment {
         }
 
     }
-    private class RefereshMusicModel extends AsyncTask<String,String,String>{
+    private class RefreshMusicModel extends AsyncTask<String,String,String>{
 
         @Override
         protected String doInBackground(String... params) {
