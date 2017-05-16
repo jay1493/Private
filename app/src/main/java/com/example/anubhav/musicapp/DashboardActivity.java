@@ -121,7 +121,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private MainSongsFragment mainSongFragment;
     private static FragmentManager fragmentManager;
     private ImageView searchSong,listenSong;
-    private Context context;
+    private static Context context;
     private static FrameLayout mainDashboardLayout;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE_ALL_PERMISSIONS = 1991;
     private final int Manifest_permission_READ_EXTERNAL_STORAGE = 1992;
@@ -246,6 +246,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private boolean activityCreatedForFirstTime = true;
     private static Fragment attachedFragment;
 
+    private BroadcastReceiver customBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent!=null && intent.getExtras()!=null){
+                Bundle bundle = intent.getExtras();
+                SongsModel song = (SongsModel) bundle.getSerializable(Constants.BACKGROUND_UPDATE_BROADCAST_MODEL);
+                inflateMusicLayoutFromSavedSongsModel(song,-1);
+
+            }
+        }
+    };
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -362,18 +373,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         spotlightSequence.addSpotlight(listenSong,"Want to know which song is playing ?","Just click here...and wait for our application to recognize the current playing song. Fun Right!!","1");
         spotlightSequence.startSequence();
     }
-
-    private BroadcastReceiver customBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(intent!=null && intent.getExtras()!=null){
-                Bundle bundle = intent.getExtras();
-                SongsModel song = (SongsModel) bundle.getSerializable(Constants.BACKGROUND_UPDATE_BROADCAST_MODEL);
-                inflateMusicLayoutFromSavedSongsModel(song,-1);
-
-            }
-        }
-    };
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -1123,7 +1122,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         }else {
             etSearchSong.setText("");
             etSearchSong.clearFocus();
-            super.onBackPressed();
+            if(fragmentManager.findFragmentByTag("MUSICFRAG").isVisible()){
+              moveTaskToBack(true);
+            }else {
+                super.onBackPressed();
+            }
         }
        /* if(fragmentManager.getBackStackEntryCount()>0) {
             if(fragmentManager.getBackStackEntryCount() == 1 && attachedFragment.getTag().equalsIgnoreCase(fragmentManager.getBackStackEntryAt(0).getName())){
@@ -1782,15 +1785,17 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     public static void refershLayout(MusicModel newModel){
         if(newModel!=null) {
             musicModel = newModel;
-            if (attachedFragment.getTag().equalsIgnoreCase("MUSICFRAG")) {
+
+            if (fragmentManager.findFragmentByTag("MUSICFRAG").isVisible()) {
                 Bundle bundle = null;
                 if (musicModel != null) {
                     bundle = new Bundle();
                     bundle.putSerializable(Constants.SEND_MUSIC_AS_EXTRA, musicModel);
                 }
+                Toast.makeText(context, "Inside refersh", Toast.LENGTH_SHORT).show();
                 MainSongsFragment mainSongFragment = MainSongsFragment.getInstance(bundle);
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.remove(attachedFragment);
+                fragmentTransaction.remove(fragmentManager.findFragmentByTag("MUSICFRAG"));
                 fragmentTransaction.add(R.id.fragmentView, mainSongFragment, MUSICFRAG);
                 fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
                 fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);

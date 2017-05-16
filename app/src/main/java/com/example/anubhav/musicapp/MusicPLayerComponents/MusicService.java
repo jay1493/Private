@@ -180,4 +180,14 @@ public class MusicService extends Service implements MediaPlayer.OnErrorListener
         }
         stopSelf();
     }
+
+    @Override
+    public void onDestroy() {
+        if(musicPlayer!=null){
+            musicPlayer.release();
+            musicPlayer = null;
+        }
+        super.onDestroy();
+
+    }
 }
