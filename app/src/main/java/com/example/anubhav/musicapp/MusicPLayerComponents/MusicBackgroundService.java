@@ -294,7 +294,7 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
 
             }
         }else{
-//                    initializeSnackBar(getResources().getString(R.string.Current_playlist_is_empty));
+                    pauseMusicPlayerWithLayout();
         }
     }
 
@@ -362,7 +362,7 @@ public class MusicBackgroundService extends Service implements MediaPlayer.OnErr
        /* Log.e("BackgroundService", "onCompletion:1 " +mp.getCurrentPosition());
         Log.e("BackgroundService", "onCompletion:2 " +mp.getDuration());
         Log.e("BackgroundService", "onCompletion:3 " +currentSongModel.getSongDuration());*/
-        if(Integer.parseInt(currentSongModel.getSongDuration()) == mp.getCurrentPosition()){
+        if(Integer.parseInt(currentSongModel.getSongDuration()) <= mp.getCurrentPosition()){
           //Change Song
             skipNext();
         }

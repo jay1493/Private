@@ -253,6 +253,14 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 Bundle bundle = intent.getExtras();
                 SongsModel song = (SongsModel) bundle.getSerializable(Constants.BACKGROUND_UPDATE_BROADCAST_MODEL);
                 inflateMusicLayoutFromSavedSongsModel(song,-1);
+                if(copyPlaylistList!=null && playlistModel!=null){
+                    copyPlaylistList = playlistModel.getSongsModelList();
+                    if(currentPlayingSong!=null){
+                        if(copyPlaylistList.contains(currentPlayingSong)) {
+                            copyPlaylistList.remove(currentPlayingSong);
+                        }
+                    }
+                }
 
             }
         }
