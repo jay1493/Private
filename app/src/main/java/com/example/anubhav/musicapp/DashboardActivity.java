@@ -482,6 +482,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         songName.setText(getResources().getString(R.string.Not_Playing));
         songArtistName = (TextView) findViewById(R.id.song_ArtistName_In_onScreen_Layout);
         songArtistName.setText(getResources().getString(R.string.Unknown));
+        Bitmap bitmapInitial = BitmapFactory.decodeResource(getResources(),R.drawable.index);
+        Blurry.with(context).radius(10).sampling(8).animate(500).from(bitmapInitial).into(albumBlurImage);
         playlist_Or_pauseButton = (ImageView) findViewById(R.id.pause_play_button_in_onScreen_layout);
         albumImageLayout = (FrameLayout) findViewById(R.id.playbackImage_musicLayout);
         songAlbumImage = (ImageView) findViewById(R.id.songAlbumImage_musicLayout);
@@ -1793,9 +1795,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     bundle.putSerializable(Constants.SEND_MUSIC_AS_EXTRA, musicModel);
                 }
                 Toast.makeText(context, "Inside refersh", Toast.LENGTH_SHORT).show();
-                MainSongsFragment mainSongFragment = MainSongsFragment.getInstance(bundle);
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
                 fragmentTransaction.remove(fragmentManager.findFragmentByTag("MUSICFRAG"));
+                MainSongsFragment mainSongFragment = MainSongsFragment.getInstance(bundle);
                 fragmentTransaction.add(R.id.fragmentView, mainSongFragment, MUSICFRAG);
                 fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
                 fragmentTransaction.setCustomAnimations(R.anim.fade_in, R.anim.fade_out);
