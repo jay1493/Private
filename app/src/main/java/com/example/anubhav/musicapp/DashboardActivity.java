@@ -184,6 +184,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             musicService.setSongModel(songModelReceivedFromMusicPLayer);
             musicService.playSong(DashboardActivity.this);
             playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+            playPause.setTag(R.drawable.pause_playback);
             if(musicService!=null && seekBar!=null){
                 //Connected Service
                 seekbarRunnable = new Runnable() {
@@ -240,9 +241,6 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private CustomAudioLoseListener customAudioLoseListener;
     private boolean isRevealEnabled = false;
     private ImageView videoPlaceHolder;
-    private Drawable.ConstantState playFilledConstantState;
-    private Drawable.ConstantState playlistConstantState;
-    private Drawable.ConstantState switchToImageConstatntState;
     private boolean activityCreatedForFirstTime = true;
     private static Fragment attachedFragment;
 
@@ -452,6 +450,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         mainDashboardLayout = (FrameLayout) findViewById(R.id.mainDashboard);
         searchSong = (ImageView)findViewById(R.id.searchSong);
         listenSong = (ImageView) findViewById(R.id.listenSong);
+        listenSong.setTag(R.drawable.listen_song);
         toolbar = (Toolbar)findViewById(R.id.toolbar_dashboard);
         videoLoader = (ImageView)findViewById(R.id.videoLoader);
         videoPlaceHolder = (ImageView) findViewById(R.id.videoPlaceHolder);
@@ -468,12 +467,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         slidingLayout.setDragView(R.id.dragLayout);
         initExpandedView();
         copyPlaylistList = new ArrayList<>();
-        //noinspection RestrictedApi
-        playFilledConstantState = AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState();
-        //noinspection RestrictedApi
-        playlistConstantState = AppCompatDrawableManager.get().getDrawable(context, R.drawable.playlist).getConstantState();
-        //noinspection RestrictedApi
-        switchToImageConstatntState = AppCompatDrawableManager.get().getDrawable(context, R.drawable.switch_to_image).getConstantState();
+
 
     }
 
@@ -493,6 +487,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         Bitmap bitmapInitial = BitmapFactory.decodeResource(getResources(),R.drawable.index);
         Blurry.with(context).radius(10).sampling(8).animate(500).from(bitmapInitial).into(albumBlurImage);
         playlist_Or_pauseButton = (ImageView) findViewById(R.id.pause_play_button_in_onScreen_layout);
+        playlist_Or_pauseButton.setTag(R.drawable.play_filled);
         albumImageLayout = (FrameLayout) findViewById(R.id.playbackImage_musicLayout);
         songAlbumImage = (ImageView) findViewById(R.id.songAlbumImage_musicLayout);
         playlistLayout = (RelativeLayout) findViewById(R.id.playlist_musicLayout);
@@ -500,6 +495,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         skipNext     = (ImageView) findViewById(R.id.skipNext_song);
         seekBar = (SeekBar) findViewById(R.id.music_seekbar);
         playPause = (ImageView) findViewById(R.id.playPause_song_musicLayout);
+        playPause.setTag(R.drawable.play_filled);
         currentTimer = (TextView) findViewById(R.id.currentTimer);
         seekbarHandler = new Handler();
         decimalFormat = new java.text.DecimalFormat("0.00");
@@ -602,8 +598,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                                 }
                             }else {
                                 //noinspection RestrictedApi
-                                if (playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(DashboardActivity.this, R.drawable.pause_playback).getConstantState()) {
+                                if ((Integer)playPause.getTag() == R.drawable.pause_playback) {
                                     playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                                    playPause.setTag(R.drawable.play_filled);
                                     currentTimer.setText("--:--");
                                 }
                             }
@@ -644,8 +641,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 musicService.setSongModel(songModelReceivedFromMusicPLayer);
                 musicService.playSong(DashboardActivity.this);
                 //noinspection RestrictedApi
-                if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()){
+                if((Integer)playPause.getTag() == R.drawable.play_filled){
                     playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                    playPause.setTag(R.drawable.pause_playback);
                 }
 
             }
@@ -683,8 +681,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         if(progress == seekBar.getMax()){
                             //Full Song Played.,change pause image to play
                             //noinspection RestrictedApi
-                            if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(DashboardActivity.this,R.drawable.pause_playback).getConstantState()){
+                            if((Integer)playPause.getTag() == R.drawable.pause_playback){
                                 playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                                playPause.setTag(R.drawable.play_filled);
                                 currentTimer.setText("--:--");
                             }
                         }else{
@@ -724,8 +723,9 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
     private void inflateExpandedView() {
         setUpValuesFromSongModel();
         //noinspection RestrictedApi
-        if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()){
+        if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.play_filled){
             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+            playlist_Or_pauseButton.setTag(R.drawable.pause_playback);
         }
     }
 
@@ -812,30 +812,33 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         switch (view.getId()){
             case R.id.pause_play_button_in_onScreen_layout:
                 //noinspection RestrictedApi
-                if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.pause_playback){
                     //Currently playing
                     if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
                         //In secs
                         currentProgress = musicService.getMediaPlayerPos();
                         musicService.pauseMediaPlayer();
                         playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                        playlist_Or_pauseButton.setTag(R.drawable.play_filled);
                     }
-                }else if(playlist_Or_pauseButton.getDrawable().getConstantState() == playFilledConstantState){
+                }else if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.play_filled){
                     //Currently Paused
                     if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
                         //In secs
                         musicService.resumePlayback();
                         playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                        playlist_Or_pauseButton.setTag(R.drawable.pause_playback);
                     }else if(seekBar!=null && seekBar.isEnabled() && musicService==null){
                         if(!isServiceConnected){
                             //Service is UnBounded...
                             currentPlayingSong = songModelReceivedFromMusicPLayer;
                             inflateMusicLayout(currentPlayingSong);
                             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                            playlist_Or_pauseButton.setTag(R.drawable.pause_playback);
                         }
                     }
                 }else {
-                    if(playlist_Or_pauseButton.getDrawable().getConstantState() == playlistConstantState){
+                    if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.playlist){
                         //Setup Playlist...
                         if(currentPlayingSong!=null) {
                             if(copyPlaylistList!=null && copyPlaylistList.contains(currentPlayingSong)) {
@@ -873,26 +876,28 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             }, true, null, this,false);
                             playlistRecyclerView.setAdapter(playlistAdapter);
                             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                            playlist_Or_pauseButton.setTag(R.drawable.switch_to_image);
                         }
                     }else {
-                        if(playlist_Or_pauseButton.getDrawable().getConstantState() == switchToImageConstatntState){
+                        if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.switch_to_image){
                             //Switch Layouts
                             playlistLayout.setVisibility(View.GONE);
                             albumImageLayout.setVisibility(View.VISIBLE);
                             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                            playlist_Or_pauseButton.setTag(R.drawable.playlist);
                         }
                     }
                 }
                 break;
             case R.id.playPause_song_musicLayout:
-                //noinspection RestrictedApi
-                if(playPause.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+                if((Integer)playPause.getTag() == R.drawable.pause_playback){
                     //Currently playing
                     if(seekBar!=null && seekBar.isEnabled() && musicService!=null){
                         //In secs
                         currentProgress = musicService.getMediaPlayerPos();
                         musicService.pauseMediaPlayer();
                         playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                        playPause.setTag(R.drawable.play_filled);
                     }
                 }else{
                     //Currently Paused
@@ -905,6 +910,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                             albumImageLayout.setVisibility(View.VISIBLE);
                             playlistLayout.setVisibility(View.GONE);
                             playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                            playlist_Or_pauseButton.setTag(R.drawable.playlist);
                         }
                         inflateMusicLayout(currentPlayingSong);
                         if(playlistAdapter!=null){
@@ -915,26 +921,28 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         //In secs
                         musicService.resumePlayback();
                         playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                        playPause.setTag(R.drawable.pause_playback);
                     }else if(seekBar!=null && seekBar.isEnabled() && musicService==null){
                         if(!isServiceConnected){
                             //Service is UnBounded...
                             currentPlayingSong = songModelReceivedFromMusicPLayer;
                             inflateMusicLayout(currentPlayingSong);
                             playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                            playPause.setTag(R.drawable.pause_playback);
                         }
                     }
                 }
                 break;
             case R.id.listenSong:
                 if(connectedToNetwork()) {
-                    //noinspection RestrictedApi
-                    if (listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context, R.drawable.listen_song).getConstantState()) {
+                    if ((Integer)listenSong.getTag() == R.drawable.listen_song) {
                         if (mediaPlayer != null) {
                             mediaPlayer.setVolume(0f, 0f);
                         }
                         resetAlbumSearchLayout(false);
                         startFingerprinting();
                         listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listenting_song));
+                        listenSong.setTag(R.drawable.listenting_song);
                     } else {
                         if (mediaPlayer != null) {
                             mediaPlayer.setVolume(0f, 0f);
@@ -944,6 +952,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                         cancel();
                         albumSearchLayout.removeAllViews();
                         listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
+                        listenSong.setTag(R.drawable.listen_song);
 
                     }
                 }else{
@@ -1488,7 +1497,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     private void resetListenSongVisualizationLayout() {
         //noinspection RestrictedApi
-        if(listenSong.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.listenting_song).getConstantState()) {
+        if((Integer)listenSong.getTag() == R.drawable.listenting_song) {
             if(mediaPlayer!=null){
                 mediaPlayer.setVolume(0f,0f);
             }
@@ -1497,6 +1506,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             cancel();
             albumSearchLayout.removeAllViews();
             listenSong.setImageDrawable(getResources().getDrawable(R.drawable.listen_song));
+            listenSong.setTag(R.drawable.listen_song);
         }
 
 
@@ -1594,45 +1604,68 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             ===============================*/
             //Todo: Below commented line is used to tell Lint to skip inspection of its below line:
             //noinspection RestrictedApi
-            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.playlist).getConstantState()
-                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.switch_to_image).getConstantState()){
+
+
+            if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.playlist
+                    || (Integer)playlist_Or_pauseButton.getTag() == R.drawable.switch_to_image){
                 Drawable expandedDrawable = playPause.getDrawable();
                 playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
+                playlist_Or_pauseButton.setTag(playPause.getTag());
 
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.COLLAPSED && newState == SlidingUpPanelLayout.PanelState.DRAGGING){
-            //noinspection RestrictedApi
-            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()
-                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()){
+            if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.play_filled
+                    || (Integer)playlist_Or_pauseButton.getTag() == R.drawable.pause_playback){
+
+
                     playPause.setImageDrawable(playlist_Or_pauseButton.getDrawable());
+                    playPause.setTag(playlist_Or_pauseButton.getTag());
                 if(playlistLayout.getVisibility() == View.VISIBLE) {
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                    playlist_Or_pauseButton.setTag(R.drawable.switch_to_image);
                 }else{
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                    playlist_Or_pauseButton.setTag(R.drawable.playlist);
                 }
+
+            }
+        }else if(previousState == SlidingUpPanelLayout.PanelState.COLLAPSED && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
+            if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.play_filled
+                    || (Integer)playlist_Or_pauseButton.getTag() == R.drawable.pause_playback){
+
+
+                playPause.setImageDrawable(playlist_Or_pauseButton.getDrawable());
+                playPause.setTag(playlist_Or_pauseButton.getTag());
+                if(playlistLayout.getVisibility() == View.VISIBLE) {
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
+                    playlist_Or_pauseButton.setTag(R.drawable.switch_to_image);
+                }else{
+                    playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                    playlist_Or_pauseButton.setTag(R.drawable.playlist);
+                }
+
+            }
+        }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.COLLAPSED){
+            if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.playlist
+                    || (Integer)playlist_Or_pauseButton.getTag() == R.drawable.switch_to_image){
+
+
+                Drawable expandedDrawable = playPause.getDrawable();
+                playlist_Or_pauseButton.setImageDrawable(expandedDrawable);
+                playlist_Or_pauseButton.setTag(playPause.getTag());
 
             }
         }else if(previousState == SlidingUpPanelLayout.PanelState.DRAGGING && newState == SlidingUpPanelLayout.PanelState.EXPANDED){
 
+            if((Integer)playlist_Or_pauseButton.getTag() == R.drawable.play_filled
+                    || (Integer)playlist_Or_pauseButton.getTag() == R.drawable.pause_playback) {
 
-                /*TODO: 9/5/17 : Commented the status bar tranceparancy code, as we have put static transclucent status bar now..
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Window window = getWindow();
-                String dynamicColor = "#181616";
-                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                window.setStatusBarColor(Color.parseColor(dynamicColor));
-                }
-                ===================================================*/
-
-            //noinspection RestrictedApi
-            if(playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.play_filled).getConstantState()
-                    || playlist_Or_pauseButton.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.pause_playback).getConstantState()) {
                 if(playlistLayout.getVisibility() == View.VISIBLE){
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.switch_to_image));
-
+                    playlist_Or_pauseButton.setTag(R.drawable.switch_to_image);
                 }else{
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                    playlist_Or_pauseButton.setTag(R.drawable.playlist);
                 }
              }
         }
@@ -1683,6 +1716,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                     albumImageLayout.setVisibility(View.VISIBLE);
                     playlistLayout.setVisibility(View.GONE);
                     playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.playlist));
+                    playlist_Or_pauseButton.setTag(R.drawable.playlist);
                 }
             }else{
             }
@@ -1733,6 +1767,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             if(musicService!=null && !musicService.isMediaPlayerRunning()) {
                 musicService.resumePlayback();
                 playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                playlist_Or_pauseButton.setTag(R.drawable.pause_playback);
 
             }
         }
@@ -1742,6 +1777,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                 currentProgress = musicService.getMediaPlayerPos();
                 musicService.pauseMediaPlayer();
                 playlist_Or_pauseButton.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                playlist_Or_pauseButton.setTag(R.drawable.play_filled);
             }
         }
     }
@@ -1764,6 +1800,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                                 pausedFromCall = true;
                                 musicService.pauseMediaPlayer();
                                 playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                                playPause.setTag(R.drawable.play_filled);
 
                             }
                             break;
@@ -1773,6 +1810,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                                 pausedFromCall = true;
                                 musicService.pauseMediaPlayer();
                                 playPause.setImageDrawable(getResources().getDrawable(R.drawable.play_filled));
+                                playPause.setTag(R.drawable.play_filled);
                             }
                             break;
                         case TelephonyManager.CALL_STATE_IDLE:
@@ -1781,6 +1819,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
                                 pausedFromCall = false;
                                 musicService.resumePlayback();
                                 playPause.setImageDrawable(getResources().getDrawable(R.drawable.pause_playback));
+                                playPause.setTag(R.drawable.pause_playback);
                             }
                             break;
                     }

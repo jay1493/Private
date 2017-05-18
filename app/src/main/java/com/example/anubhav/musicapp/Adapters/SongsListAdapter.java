@@ -85,7 +85,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
         holder.songArtistTitle.setText(songsModel.get(position).getSongArtist());
         if(showPlaylistLayout){
             //noinspection RestrictedApi
-            if(holder.songOptions.getDrawable().getConstantState() == AppCompatDrawableManager.get().getDrawable(context,R.drawable.library_add).getConstantState()){
+            if((Integer)holder.songOptions.getTag()==R.drawable.library_add){
                 holder.songOptions.setImageDrawable(context.getResources().getDrawable(R.drawable.arrange_songs_in_playlist));
             }
             holder.songOptions.setOnClickListener(new View.OnClickListener() {
@@ -131,6 +131,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Cust
             parentLayout = (RelativeLayout)itemView.findViewById(R.id.mainLayoutItemSongs);
             songImage = (ImageView)itemView.findViewById(R.id.songImage_list_of_songs);
             songOptions = (ImageView)itemView.findViewById(R.id.songOptions);
+            songOptions.setTag(R.drawable.library_add);
             songTitle = (TextView)itemView.findViewById(R.id.songName_list_of_songs);
             songArtistTitle = (TextView)itemView.findViewById(R.id.singerName_list_of_songs);
             itemView.setOnClickListener(this);
