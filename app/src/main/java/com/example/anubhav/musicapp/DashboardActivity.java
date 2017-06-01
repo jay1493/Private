@@ -2,6 +2,7 @@ package com.example.anubhav.musicapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -1112,6 +1113,11 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     }
 
+    public static void callLoadersFromAsync(){
+        BaseActivity base = new BaseActivity();
+        base.callLoaders(context);
+    }
+
     private void setUpContentObserver() {
         mySongsObserver = new MySongsObserver(new Handler(context.getMainLooper()),musicModel,new ObserverListener(){
 
@@ -1531,6 +1537,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
             musicService = null;
         }
         unregisterReceiver(customAudioLoseListener);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
         super.onDestroy();
 
     }

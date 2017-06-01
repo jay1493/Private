@@ -116,6 +116,8 @@ public class FragMusicSearch extends Fragment {
     private int numberOfNotifications = 0;
     private String songImage;
     private ContentValues contentValues;
+    private boolean isGenerateDownloadLinksActive = false;
+    private boolean isDownloading = false;
 
     public static FragMusicSearch getInstance(Bundle bundle){
         if(bundle!=null){
@@ -175,7 +177,7 @@ public class FragMusicSearch extends Fragment {
                 decodedSearchStr = matcher.replaceAll("%20");
 //                String searchUrl = SEARCH_URL_1 + decodedSearchStr + SEARCH_URL_2;
                 String searchUrl = WEBHILLS_YOUTUBE_API_HIT_SEARCH + "?keyword="+decodedSearchStr+"&api_key="+Constants.WEBHILLS_Youtube_API_KEY;
-                new GetVideoListFromYouTube().execute(searchUrl);
+                new GetVideoListFromYouTube().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,searchUrl);
             }else{
                 return;
             }
@@ -316,7 +318,11 @@ public class FragMusicSearch extends Fragment {
                fetchedClickedView = view;
                fetchedClickedView.findViewById(R.id.mainGridLayout).setVisibility(View.VISIBLE);
                fetchedClickedPos = position;
-              new GenerateDownloadLinks().execute(listOfSearchedYouTubeVids.get(position).getVideoId(),listOfSearchedYouTubeVids.get(position).getToken());
+               if(!isGenerateDownloadLinksActive) {
+                   new GenerateDownloadLinks().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,listOfSearchedYouTubeVids.get(position).getVideoId(), listOfSearchedYouTubeVids.get(position).getToken());
+               }else{
+                   Toast.makeText(activityContext, "Hold On!! Download Links are generating for previous query", Toast.LENGTH_SHORT).show();
+               }
            }
        });
         recyclerView.setAdapter(youTubeSearchAdapter);
@@ -597,6 +603,7 @@ public class FragMusicSearch extends Fragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            isGenerateDownloadLinksActive = true;
             progressDialog = new ProgressDialog(activityContext);
             progressDialog.setMessage(activityContext.getResources().getString(R.string.fetching_download_links));
             progressDialog.setCanceledOnTouchOutside(false);
@@ -697,6 +704,7 @@ public class FragMusicSearch extends Fragment {
         protected void onPostExecute(DownloadVidsModel result) {
             super.onPostExecute(result);
             // Cancel the Loading Dialog
+            isGenerateDownloadLinksActive = false;
             if(result!=null && (result.getAudioLinks()!=null && result.getAudioLinks().size()>0 || result.getVideoLinks()!=null
                     && result.getVideoLinks().size()>0)) {
                 initiatePopupWindow(result);
@@ -758,7 +766,11 @@ public class FragMusicSearch extends Fragment {
                 if(audioLists!=null) {
                     popUpWindow.dismiss();
                     if(audioLists.get(pos)!=null && !TextUtils.isEmpty(audioLists.get(pos).getUrl())) {
-                        new DownloadLink().execute(audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
+                        if(!isDownloading) {
+                            new DownloadLink().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, audioLists.get(pos).getUrl(), audioLists.get(pos).getExtension(), "");
+                        }else{
+                            Toast.makeText(activityContext, "Hold On!! Downloading for previous query", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
             }
@@ -770,14 +782,18 @@ public class FragMusicSearch extends Fragment {
                 if(videoLists!=null){
                     popUpWindow.dismiss();
                     if(videoLists.get(pos)!=null && !TextUtils.isEmpty(videoLists.get(pos).getUrl())) {
-                        new DownloadLink().execute(videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
+                        if(!isDownloading) {
+                            new DownloadLink().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, videoLists.get(pos).getUrl(), videoLists.get(pos).getExtension(), "");
+                        }else{
+                            Toast.makeText(activityContext, "Hold On!! Downloading for previous query", Toast.LENGTH_SHORT).show();
+                        }
                     }
 
                 }
             }
         });
         videoRecycler.setAdapter(videoLinkAdap);
-        setPopupTransitions(popUpWindow);
+//        setPopupTransitions(popUpWindow);
         view.findViewById(R.id.dismissPopup).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -817,6 +833,7 @@ public class FragMusicSearch extends Fragment {
         protected void onPreExecute() {
             super.onPreExecute();
             //Setting up Notification
+            isDownloading = true;
             notificationManager = (NotificationManager) activityContext.getSystemService(Context.NOTIFICATION_SERVICE);
             notifBuilder = new NotificationCompat.Builder(activityContext);
             notifBuilder.setColor(activityContext.getResources().getColor(R.color.black_slight_alpha));
@@ -898,7 +915,12 @@ public class FragMusicSearch extends Fragment {
 
                 }else{
                     progressDialog.dismiss();
-                    Toast.makeText(activityContext, "There seems a problem downloading your resource..Try Again!!", Toast.LENGTH_SHORT).show();
+                    new Handler(activityContext.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activityContext, "There seems a problem downloading your resource..Try Again!!", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
 
 
@@ -926,6 +948,7 @@ public class FragMusicSearch extends Fragment {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            isDownloading = false;
             notificationManager.cancelAll();
 //   Todo: InProcess To ,make album Muziek   activityContext.getContentResolver().update(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,)
             try {
@@ -983,6 +1006,7 @@ public class FragMusicSearch extends Fragment {
                                     @Override
                                     public void run() {
                                         Toast.makeText(activityContext, "Song added successfully!", Toast.LENGTH_SHORT).show();
+                                        DashboardActivity.callLoadersFromAsync();
                                     }
                                 });
                             }
