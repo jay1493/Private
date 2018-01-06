@@ -141,7 +141,8 @@ public class StartingActivity extends BaseActivity implements LoaderManager.Load
     }
 
     private void isLoaderNeedsToLoad() {
-        if(getMusicModel()==null) {
+        getSupportLoaderManager().initLoader(1, null, this);
+       /* if(getMusicModel()==null) {
             getSupportLoaderManager().initLoader(1, null, this);
         }else{
             musicModel = getMusicModel();
@@ -154,26 +155,9 @@ public class StartingActivity extends BaseActivity implements LoaderManager.Load
                     finish();
                 }
             },9000);
-            //But check for a change
-          /*  setObserverOnActivity(new ObserverListener() {
-                @Override
-                public void isProcessCompleted(boolean isComplete) {
-                       if(isComplete){
-                           //Change
-                           getSupportLoaderManager().initLoader(1, null, StartingActivity.this);
-                           Log.d("", "isProcessCompleted: StartLoader");
-                           return;
-                       }else{
-                           //No change is there
-                           musicModel = getMusicModel();
-                           mainImage.setOnClickListener(StartingActivity.this);
-                           Log.d("", "isProcessCompleted: SavedModel");
-                           return;
-                       }
-                }
-            },context);*/
+
             Log.d("", "isProcessCompleted: OutsideFunction");
-        }
+        }*/
     }
 
 

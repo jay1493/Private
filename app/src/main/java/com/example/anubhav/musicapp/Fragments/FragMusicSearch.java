@@ -72,10 +72,19 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Created by anubhav on 22/2/17.
@@ -218,6 +227,7 @@ public class FragMusicSearch extends Fragment {
                 try {
                     URL url = new URL(searchUrl);
                     HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    disableSSLCertificateChecking();
                     urlConnection.setRequestMethod("GET");
                     urlConnection.setReadTimeout(10000);
                     /*urlConnection.setRequestProperty("Accept-Encoding", "gzip");
@@ -616,13 +626,33 @@ public class FragMusicSearch extends Fragment {
         protected DownloadVidsModel doInBackground(String... params) {
             String videoId = params[0];
             String token = params[1];
-            String downloadLinks = KEEPVID_FETCH_DOWNLOAD_LINKS + videoId;
+            String downloadLinks = KEEPVID_FETCH_DOWNLOAD_LINKS + videoId + "#adContent";
+            String newLink = "https://keepvid.com/?url=youtube.com/watch?v="+videoId;
             Document keepVidHome = null;
 
             try {
-                keepVidHome = Jsoup.connect(downloadLinks).get();
+                URL url = new URL(newLink);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+//                disableSSLCertificateChecking();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:57.0) Gecko/20100101 Firefox/57.0 free-desktop");
+                urlConnection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                urlConnection.setRequestProperty("Cookie", "visited=visited; _ga=GA1.2.236977120.1515077883; _gid=GA1.2.1380422802.1515077883");
+                int response = urlConnection.getResponseCode();
+                if(response == HttpURLConnection.HTTP_OK){
+                    BufferedReader reader = null;
+                    reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                    String line ="";
+                    String responseService ="";
+                    while((line = reader.readLine())!=null){
+                        responseService += line;
+                    }
+                    keepVidHome = Jsoup.parse(responseService);
+                }
+//                keepVidHome = Jsoup.connect(downloadLinks).get();
                 Element body = keepVidHome.select("body").get(0);
-                Element mainDivElementContainer = body.getElementsByClass("search-result-content").get(0).getElementsByClass("container-sm").get(0);
+                Element mainDivElementContainer = body.getElementsByClass("search-result-content").get(0).getElementsByClass("container-sm").get(2);
                 if(mainDivElementContainer!=null) {
                     Element mainContainerExceptAudioLinks = mainDivElementContainer.getElementsByClass("row").get(0);
                     Element videoInfoMainElement = mainContainerExceptAudioLinks.getElementsByClass("item-3").get(0);
@@ -862,6 +892,7 @@ public class FragMusicSearch extends Fragment {
                 urlConnection.setRequestMethod("GET");
                 urlConnection.setRequestProperty("User-Agent",userAgent);
                 urlConnection.setReadTimeout(10000);
+                disableSSLCertificateChecking();
                 urlConnection.connect();
                 int response = urlConnection.getResponseCode();
                 if(response == HttpURLConnection.HTTP_OK){
@@ -1006,7 +1037,7 @@ public class FragMusicSearch extends Fragment {
                                     @Override
                                     public void run() {
                                         Toast.makeText(activityContext, "Song added successfully!", Toast.LENGTH_SHORT).show();
-                                        DashboardActivity.callLoadersFromAsync();
+                                        ((DashboardActivity)activityContext).callLoadersFromAsync();
                                     }
                                 });
                             }
@@ -1032,6 +1063,35 @@ public class FragMusicSearch extends Fragment {
                             });
             }
             return null;
+        }
+    }
+    private static void disableSSLCertificateChecking() {
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+                // Not implemented
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+                // Not implemented
+            }
+        } };
+
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         }
     }
 }

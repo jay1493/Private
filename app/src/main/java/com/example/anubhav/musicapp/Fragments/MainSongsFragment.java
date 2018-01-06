@@ -2,6 +2,7 @@ package com.example.anubhav.musicapp.Fragments;
 
 import android.app.Fragment;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -17,6 +18,7 @@ import com.example.anubhav.musicapp.Constants;
 import com.example.anubhav.musicapp.Model.AlbumModel;
 import com.example.anubhav.musicapp.Model.MusicModel;
 import com.example.anubhav.musicapp.R;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 
@@ -61,6 +63,14 @@ public class MainSongsFragment extends android.support.v4.app.Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        /*SharedPreferences modelPrefs= activityContext.getSharedPreferences(Constants.SHARED_PREFS_NAME,Context.MODE_PRIVATE);
+        if(modelPrefs.getString(Constants.SHARED_PREFS_SAVED_MODEL,null)!=null){
+            try {
+                musicModel = new Gson().fromJson(modelPrefs.getString(Constants.SHARED_PREFS_SAVED_MODEL, null), MusicModel.class);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }*/
 //        setRetainInstance(true);
     }
 

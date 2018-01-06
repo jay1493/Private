@@ -412,6 +412,7 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
         }
     }
 
+    @SuppressLint("RestrictedApi")
     private void setUpInitialHomeFragment() {
         Bundle bundle = null;
         if(musicModel!=null){
@@ -1113,9 +1114,8 @@ public class DashboardActivity extends BaseActivity implements SurfaceHolder.Cal
 
     }
 
-    public static void callLoadersFromAsync(){
-        BaseActivity base = new BaseActivity();
-        base.callLoaders(context);
+    public void callLoadersFromAsync(){
+        callLoaders(context);
     }
 
     private void setUpContentObserver() {
